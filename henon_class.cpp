@@ -7,7 +7,7 @@
 #include <complex> //std::sqrt
 
 #include"fourier.h"
-#include"newton.h"
+//#include"newton.h"
 
 #define npoints 1000
 #define PI 3.14159265359
@@ -17,20 +17,11 @@ std::mt19937 generator(rd());
 std::normal_distribution<double> gauss_distr(0.0, 1.0);
 std::uniform_real_distribution<double> uniform_distr(-1, 1);
 
-
-void pol(double x, double *func, double *dfunc, const double a, const double b, const double c)
-{
-	*func  = a - b*x*x + c*x*x*x;
-	*dfunc =  - 2.0*b*x + 3.0*c*x*x;
-}
-
-
 struct Ensemble
 {
 	double *p, *q, *E, *action, *dI_dE;
 	double w, k, epsilon, t;
 	int Nparticles;
-	void (*pfpolinomio)(double, double *, double *, const double , const double , const double ); 	
 	
 	double avg_energy()
 	{
@@ -81,11 +72,6 @@ struct Ensemble
 	
 		root1 = croot1.real();
 		root2 = croot2.real();
-		
-		//root1 = rtsafe(pfpolinomio, root1 - 0.01*root1, root1 + 0.01*root1, 1e-6, a, b, c);
-		//root2 = rtsafe(pfpolinomio, root2 - 0.01*root2, root2 + 0.01*root2, 1e-6, a, b, c);
-		
-		std::cout << "root1 = " << root1 << "  root2 = " << root2 << std::endl;
 	}
 	
 	
@@ -165,7 +151,7 @@ struct Ensemble
 		
 			symplectic_advance(q[i], p[i], dt/2.0, t);
 			
-			E[i] = energy( q[i], p[i]); //NON è il contrario!!
+			E[i] = energy( q[i], p[i]); 
 		
 			double root1, root2;
 			
@@ -188,7 +174,6 @@ struct Ensemble
 	
 	Ensemble(int N, double wi, double ki, double epsiloni, double Ei)
 	{
-		pfpolinomio = pol;
 		Nparticles = N;
 		w = wi;
 		k = ki;
@@ -266,7 +251,7 @@ double slope_linear_regression(const std::vector<double>& x, const std::vector<d
 int main(int argc, char *argv[])
 {
 
-	int Nensemble = 1;
+	int Nensemble = 1000;
 	int nsteps = 10;
 	int Ndynamic = 512;
 	
