@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
 			//avg_diffusion_temp += sqrt(q_p_f[n*Ndynamic]*q_p_f[n*Ndynamic] + q_p_f[n*Ndynamic + 1]*q_p_f[n*Ndynamic + 1]) / Ndynamic;	
 		}
 		avg_diffusion_temp /= Ndynamic*ensemble_temp.Nparticles;
-		Ncoeff_diffusion_dynamic.push_back( epsilon*epsilon*avg_diffusion_temp );		
+		Ncoeff_diffusion_dynamic.push_back( /*epsilon*epsilon*/avg_diffusion_temp );		
 	}
 	
 	coeff_drift = (ensemble.avg_action() - avg_action_0)/dt;
