@@ -190,7 +190,7 @@ struct Ensemble
 		double root1, root2;
 		
 		find_roots(root1, root2, 2.0*Ei, w*w, 2.0*k/3.0);
-				std::cout << "ciao sono il costruttore" << std::endl;
+		
 		double actioni = action_simpson(Ei, root1, root2, npoints);
 		double dI_dEi = dI_dE_simpson(Ei, root1, root2, npoints);
 		
@@ -253,12 +253,12 @@ int main(int argc, char *argv[])
 
 	int Nensemble = 1000;
 	int nsteps = 10;
-	int Ndynamic = 512;
+	int Ndynamic = 32;
 	
 	double w = 1.0;
 	double k = 1.0;
 	double dt = 0.01;
-	double dtdynamic = 0.001;
+	double dtdynamic = 0.01;
 	double epsilon = 0.1;
 	
 	double E = 0.1;
@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
 		
 		Ensemble ensemble_temp = ensemble;
 		//propaga la dinamica simplettica per Ndynamic passi
-		for(int j=0; j<Ndynamic; j++)
+		for(int j=0; j<Ndynamic*dtdynamic*(2.0*PI*ensemble_temp.dI_dE[0]); j++)
 		{
 			//per ogni particella
 			for(int n=0; n<ensemble_temp.Nparticles; n++)
@@ -318,13 +318,13 @@ int main(int argc, char *argv[])
 			//avg_diffusion_temp += sqrt(q_p_f[n*Ndynamic]*q_p_f[n*Ndynamic] + q_p_f[n*Ndynamic + 1]*q_p_f[n*Ndynamic + 1]) / Ndynamic;	
 		}
 		avg_diffusion_temp /= Ndynamic*ensemble_temp.Nparticles;
-		Ncoeff_diffusion_dynamic.push_back( /*epsilon*epsilon*/avg_diffusion_temp );		
+		Ncoeff_diffusion_dynamic.push_back( epsilon*epsilon*avg_diffusion_temp );		
 	}
 	
 	coeff_drift = (ensemble.avg_action() - avg_action_0)/dt;
 	coeff_diffusion = slope_linear_regression(Ntime, Ncoeff_diffusion);
-	//coeff_diffusion_theoretical = slope_linear_regression(Ntime, Ncoeff_diffusion_dynamic);
-	coeff_diffusion_theoretical = accumulate(Ncoeff_diffusion_dynamic.begin(), Ncoeff_diffusion_dynamic.end(), 0.0) / Ncoeff_diffusion_dynamic.size();
+	coeff_diffusion_theoretical = slope_linear_regression(Ntime, Ncoeff_diffusion_dynamic);
+	//coeff_diffusion_theoretical = accumulate(Ncoeff_diffusion_dynamic.begin(), Ncoeff_diffusion_dynamic.end(), 0.0) / Ncoeff_diffusion_dynamic.size();
 		
 		
 	std::cout << "t finale = " << ensemble.t << "\t" << "E[0] finale = " << ensemble.E[0] << std::endl
@@ -337,20 +337,33 @@ int main(int argc, char *argv[])
 	std::cout << "coeff_diffusion = " << coeff_diffusion << std::endl;
 	std::cout << "coeff_diffusion_theoretical = " << coeff_diffusion_theoretical << std::endl;
 	
-	//for(int i=0; i<Ncoeff_diffusion.size(); i++) 		 std::cout << Ncoeff_diffusion[i] 		  << std::endl;
+	for(int i=0; i<Ncoeff_diffusion.size(); i++) 		 std::cout << Ncoeff_diffusion[i] 		  << std::endl;
 	std::cout << std::endl;
-	//for(int i=0; i<Ncoeff_diffusion_dynamic.size(); i++) std::cout << Ncoeff_diffusion_dynamic[i] << std::endl;
+	for(int i=0; i<Ncoeff_diffusion_dynamic.size(); i++) std::cout << Ncoeff_diffusion_dynamic[i] << std::endl;
+	
+	
+	std::vector<double> Ncoeff_diffusion_log, Ntime_log;
+	double coeff_diffusion_loglog;
+	for(int i=0; i<Ncoeff_diffusion.size(); i++) Ncoeff_diffusion_log.push_back(log10(Ncoeff_diffusion[i]));
+	for(int i=0; i<Ntime.size(); i++) Ntime_log.push_back(log10(Ntime[i]));
+	
+	coeff_diffusion_loglog = slope_linear_regression(Ntime_log, Ncoeff_diffusion_log);
+	std::cout << "coeff_diffusion_loglog = " << coeff_diffusion_loglog << std::endl;
+	for(int i=0; i<Ncoeff_diffusion_log.size(); i++) std::cout << Ncoeff_diffusion_log[i] << std::endl;
 	
 	/*
 	std::ofstream output;	
-	output.open("out.txt");
+	output.open("diffusion_time.txt");
 	
-	for(int i=0; i<Nensemble; i++)
+	for(int i=0; i<Ncoeff_diffusion.size(); i++)
 	{
-		output << ensemble_0.action[i] << "\t" << ensemble.action[i] << std::endl; 	
+		output << Ntime[i] << "\t" << Ncoeff_diffusion[i] << std::endl; 	
 	}
 	
 	output.close();
+	
+	system("gnuplot plot_diffusion_time.plt");
+	system("gnuplot plot_diffusion_time_loglog.plt");
 	*/
 	
 	std::cout << std::endl;
