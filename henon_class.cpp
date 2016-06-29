@@ -58,20 +58,27 @@ struct Ensemble
 	void find_roots(double & root1, double & root2, const double a, const double b, const double c) //finds the first 2 roots of a-bx^2+cx^3
 	{
 		std::complex<double> croot1, croot2, temp, ctemp, valueplus, valueminus;
-		
-		valueplus =  std::complex<double>(1.0,  sqrt(3.0));
-		valueminus = std::complex<double>(1.0, -sqrt(3.0));
-		
-		ctemp =  std::sqrt( std::complex<double>( 27.0*a*a*pow(c, 16.0) - 4.0*a*b*b*b*pow(c, 14.0), 0.0 ));
-		ctemp = 3.0*sqrt(3.0)*ctemp - 27.0*a*pow(c, 8.0) + 2.0*b*b*b*pow(c, 6.0);
-	
-		temp = std::pow(ctemp, 1.0/3.0);
-	
-		croot1 = b/(3.0*c) - valueminus*temp/(6.0*cbrt(2.0)*c*c*c) -  valueplus*b*b*c/(3.0*cbrt(4.0)*temp);
-		croot2 = b/(3.0*c) -  valueplus*temp/(6.0*cbrt(2.0)*c*c*c) - valueminus*b*b*c/(3.0*cbrt(4.0)*temp);
-	
-		root1 = croot1.real();
-		root2 = croot2.real();
+		if( c == 0.0 ) 
+		{
+			root1 = -sqrt(a/b);
+			root2 =  sqrt(a/b);
+		}
+		else {
+			
+			valueplus =  std::complex<double>(1.0,  sqrt(3.0));
+			valueminus = std::complex<double>(1.0, -sqrt(3.0));
+
+			ctemp =  std::sqrt( std::complex<double>( 27.0*a*a*pow(c, 16.0) - 4.0*a*b*b*b*pow(c, 14.0), 0.0 ));
+			ctemp = 3.0*sqrt(3.0)*ctemp - 27.0*a*pow(c, 8.0) + 2.0*b*b*b*pow(c, 6.0);
+
+			temp = std::pow(ctemp, 1.0/3.0);
+
+			croot1 = b/(3.0*c) - valueminus*temp/(6.0*cbrt(2.0)*c*c*c) -  valueplus*b*b*c/(3.0*cbrt(4.0)*temp);
+			croot2 = b/(3.0*c) -  valueplus*temp/(6.0*cbrt(2.0)*c*c*c) - valueminus*b*b*c/(3.0*cbrt(4.0)*temp);
+
+			root1 = croot1.real();
+			root2 = croot2.real();
+		}
 	}
 	
 	
@@ -191,13 +198,16 @@ struct Ensemble
 		
 		find_roots(root1, root2, 2.0*Ei, w*w, 2.0*k/3.0);
 		
+		std::cout << "root 1 = " << root1 << " " << "root2 = " << root2 << std::endl;
+		
 		double actioni = action_simpson(Ei, root1, root2, npoints);
 		double dI_dEi = dI_dE_simpson(Ei, root1, root2, npoints);
 		
 		for(int i=0; i<N; i++) 
 		{
 			E[i] = Ei;
-			q[i] = 0.0;
+			double nr = uniform_distr(generator);
+			q[i] = (nr<0.0)? -nr*root1 : nr*root2;
 			p[i] = pex(Ei, q[i]);
 			action[i] = actioni;
 			dI_dE[i] = dI_dEi;
@@ -247,12 +257,8 @@ double slope_linear_regression(const std::vector<double>& x, const std::vector<d
 	return Sxy / Sxx;
 }
 
-double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic)
-{
-	
-	double *q_p_f;
-	q_p_f = new double[Ndynamic*ensemble_temp.Nparticles];
-	
+double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic, double *q_p_f)
+{	
 	//propaga la dinamica simplettica per Ndynamic passi
 	for(int j=0; j<Ndynamic; j++)
 	{		
@@ -295,7 +301,7 @@ int main(int argc, char *argv[])
 	//double dtdynamic = 0.001;
 	double epsilon = 0.1;
 	
-	double E = 0.01;
+	double E = 0.1;
 	double Emax = w*w*w*w*w*w/(6.0*k*k);
 	
 	std::cout << "Emax = " << Emax << std::endl;
@@ -316,17 +322,19 @@ int main(int argc, char *argv[])
 	
 	double avg_action_0 = ensemble.avg_action();
 	
-	Ensemble ensemble_temp = ensemble;
 	
-	coeff_diffusion_theoretical = epsilon*epsilon*theoretical_diffusion(ensemble_temp, Ndynamic);
+	Ensemble ensemble_temp = ensemble;
+	double *q_p_f;
+	q_p_f = new double[Ndynamic*ensemble_temp.Nparticles];
+	coeff_diffusion_theoretical = epsilon*epsilon*theoretical_diffusion(ensemble_temp, Ndynamic, q_p_f);
 	
 	for(int i=0; i<nsteps; i++)
 	{
-		Ensemble ensemble_diff = ensemble;
+		//Ensemble ensemble_diff = ensemble;
 		ensemble.advance(dt);
-		
+		//std::cout << "avg action = " << ensemble.avg_action() << std::endl;		
 		Ntime.push_back(ensemble.t);
-		Ncoeff_diffusion.push_back( ensemble.avg_action_for_diffusion(ensemble_diff)/dt ); 
+		Ncoeff_diffusion.push_back( ensemble.avg_action_for_diffusion(ensemble_0)/dt ); 
 	}
 	
 	coeff_drift = (ensemble.avg_action() - avg_action_0)/dt;
@@ -343,9 +351,11 @@ int main(int argc, char *argv[])
 	std::cout << "coeff_diffusion = " << coeff_diffusion << std::endl;
 	std::cout << "coeff_diffusion_theoretical = " << coeff_diffusion_theoretical << std::endl;
 	
-	for(int i=0; i<Ncoeff_diffusion.size(); i++) 		 std::cout << Ncoeff_diffusion[i] 		  << std::endl;
+	//for(int i=0; i<Ncoeff_diffusion.size(); i++) 		 std::cout << Ncoeff_diffusion[i] 		  << std::endl;
 	std::cout << std::endl;
-	for(int i=0; i<Ncoeff_diffusion_dynamic.size(); i++) std::cout << Ncoeff_diffusion_dynamic[i] << std::endl;
+	//for(int i=0; i<Ncoeff_diffusion_dynamic.size(); i++) std::cout << Ncoeff_diffusion_dynamic[i] << std::endl;
+	
+	int err;
 	
 	/*
 	std::ofstream output;	
@@ -358,10 +368,27 @@ int main(int argc, char *argv[])
 	
 	output.close();
 	
-	int err = system("gnuplot plot_diffusion_time.plt");
+	err = system("gnuplot plot_diffusion_time.plt");
 	err = system("gnuplot plot_diffusion_time_loglog.plt");
-	*/
 	
+	
+	std::ofstream spaziofasi;	
+	spaziofasi.open("henon_spaziofasi_iniziale.txt");
+	
+	for(int j=0; j<Ndynamic; j++)
+	{		
+		for(int n=0; n<ensemble_0.Nparticles; n++)
+		{
+			ensemble_0.symplectic_advance( ensemble_0.q[n], ensemble_0.p[n], 2.0*PI*ensemble_0.dI_dE[n]/Ndynamic, ensemble_0.t);
+			spaziofasi << ensemble_0.q[n] << "\t" << ensemble_0.p[n] << "\t";
+		}
+		spaziofasi << std::endl;
+	}
+
+	spaziofasi.close();
+	
+	err = system("gnuplot plot_spaziofasi.plt");
+	*/
 	std::cout << std::endl;
 	std::cout << "Fatto!" << std::endl;
 	
