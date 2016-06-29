@@ -253,15 +253,15 @@ int main(int argc, char *argv[])
 
 	int Nensemble = 1000;
 	int nsteps = 10;
-	int Ndynamic = 32;
+	int Ndynamic = 512;
 	
 	double w = 1.0;
 	double k = 1.0;
-	double dt = 0.01;
-	double dtdynamic = 0.01;
-	double epsilon = 0.1;
+	double dt = 0.001;
+	double dtdynamic = 0.001;
+	double epsilon = 0.01;
 	
-	double E = 0.1;
+	double E = 0.05;
 	double Emax = w*w*w*w*w*w/(6.0*k*k);
 	
 	std::cout << "Emax = " << Emax << std::endl;
@@ -292,16 +292,22 @@ int main(int argc, char *argv[])
 		Ncoeff_diffusion.push_back( ensemble.avg_action_for_diffusion(ensemble_0)/dt ); 
 		
 		Ensemble ensemble_temp = ensemble;
+		
+		double *period_temp_0;
+		period_temp_0 = new double[ensemble_temp.Nparticles];		
+		for(int j=0; j<ensemble_temp.Nparticles; j++) period_temp_0[j] = 2.0*PI*ensemble_temp.dI_dE[j];
+		
 		//propaga la dinamica simplettica per Ndynamic passi
-		for(int j=0; j<Ndynamic*dtdynamic*(2.0*PI*ensemble_temp.dI_dE[0]); j++)
-		{
+		for(int j=0; j<Ndynamic; j++)
+		{		
 			//per ogni particella
 			for(int n=0; n<ensemble_temp.Nparticles; n++)
 			{
-				ensemble_temp.symplectic_advance( ensemble_temp.q[n], ensemble_temp.p[n], dtdynamic, ensemble_temp.t);
+				ensemble_temp.symplectic_advance( ensemble_temp.q[n], ensemble_temp.p[n], period_temp_0[n]/Ndynamic, ensemble_temp.t);
 				
 				//costruisco un segnale di cui vado a fare la FFT
 				q_p_f[n*Ndynamic + j] = pow( ensemble_temp.q[n]*ensemble_temp.p[n]/ensemble_temp.dI_dE[n] , 2.0); // ;
+				//if(i==0) std::cout << " ciao " << ensemble_temp.q[n] << std::endl;
 			}
 			
 			ensemble_temp.t += dtdynamic;
@@ -342,16 +348,6 @@ int main(int argc, char *argv[])
 	for(int i=0; i<Ncoeff_diffusion_dynamic.size(); i++) std::cout << Ncoeff_diffusion_dynamic[i] << std::endl;
 	
 	
-	std::vector<double> Ncoeff_diffusion_log, Ntime_log;
-	double coeff_diffusion_loglog;
-	for(int i=0; i<Ncoeff_diffusion.size(); i++) Ncoeff_diffusion_log.push_back(log10(Ncoeff_diffusion[i]));
-	for(int i=0; i<Ntime.size(); i++) Ntime_log.push_back(log10(Ntime[i]));
-	
-	coeff_diffusion_loglog = slope_linear_regression(Ntime_log, Ncoeff_diffusion_log);
-	std::cout << "coeff_diffusion_loglog = " << coeff_diffusion_loglog << std::endl;
-	for(int i=0; i<Ncoeff_diffusion_log.size(); i++) std::cout << Ncoeff_diffusion_log[i] << std::endl;
-	
-	/*
 	std::ofstream output;	
 	output.open("diffusion_time.txt");
 	
@@ -364,7 +360,7 @@ int main(int argc, char *argv[])
 	
 	system("gnuplot plot_diffusion_time.plt");
 	system("gnuplot plot_diffusion_time_loglog.plt");
-	*/
+	
 	
 	std::cout << std::endl;
 	std::cout << "Fatto!" << std::endl;
