@@ -134,7 +134,7 @@ struct Ensemble
 	
 	void symplectic_advance(double & q, double & p, const double dt, const double t)
 	{
-		p = p + dt*( w*w*q - k*q*q );
+		p = p - dt*( w*w*q - k*q*q );
 		q = q + dt*p;
 	}
 		
@@ -247,6 +247,40 @@ double slope_linear_regression(const std::vector<double>& x, const std::vector<d
 	return Sxy / Sxx;
 }
 
+double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic)
+{
+	
+	double *q_p_f;
+	q_p_f = new double[Ndynamic*ensemble_temp.Nparticles];
+	
+	//propaga la dinamica simplettica per Ndynamic passi
+	for(int j=0; j<Ndynamic; j++)
+	{		
+		//per ogni particella
+		for(int n=0; n<ensemble_temp.Nparticles; n++)
+		{
+			ensemble_temp.symplectic_advance( ensemble_temp.q[n], ensemble_temp.p[n], 2.0*PI*ensemble_temp.dI_dE[n]/Ndynamic, ensemble_temp.t);
+				
+			//costruisco un segnale di cui vado a fare la FFT
+			q_p_f[n*Ndynamic + j] = pow( ensemble_temp.q[n]*ensemble_temp.p[n]*ensemble_temp.dI_dE[n] , 2.0); // ;
+			//std::cout << " ciao " << ensemble_temp.q[n] << std::endl;
+		}
+		//ensemble_temp.t += dtdynamic;
+	}
+	
+	double avg_diffusion_temp = 0.0;
+		
+	for(int n=0; n<ensemble_temp.Nparticles; n++)
+	{
+		//FFT per la traiettoria di ogni particella
+		realft( &q_p_f[n*Ndynamic], Ndynamic );
+		
+		avg_diffusion_temp += q_p_f[n*Ndynamic];	
+		//avg_diffusion_temp += sqrt(q_p_f[n*Ndynamic]*q_p_f[n*Ndynamic] + q_p_f[n*Ndynamic + 1]*q_p_f[n*Ndynamic + 1]) / Ndynamic;	
+	}
+	
+	return avg_diffusion_temp /= Ndynamic*ensemble_temp.Nparticles;
+}
 
 int main(int argc, char *argv[])
 {
@@ -257,11 +291,11 @@ int main(int argc, char *argv[])
 	
 	double w = 1.0;
 	double k = 1.0;
-	double dt = 0.001;
-	double dtdynamic = 0.001;
-	double epsilon = 0.01;
+	double dt = 0.01;
+	//double dtdynamic = 0.001;
+	double epsilon = 0.1;
 	
-	double E = 0.05;
+	double E = 0.01;
 	double Emax = w*w*w*w*w*w/(6.0*k*k);
 	
 	std::cout << "Emax = " << Emax << std::endl;
@@ -271,8 +305,6 @@ int main(int argc, char *argv[])
 	std::vector<double> Ncoeff_diffusion, Ntime;
 	std::vector<double> Ncoeff_diffusion_dynamic;
 	
-	double *q_p_f;
-	q_p_f = new double[Ndynamic*Nensemble];
 	
 	
 	Ensemble ensemble(Nensemble, w, k, epsilon, E);
@@ -284,54 +316,22 @@ int main(int argc, char *argv[])
 	
 	double avg_action_0 = ensemble.avg_action();
 	
+	Ensemble ensemble_temp = ensemble;
+	
+	coeff_diffusion_theoretical = epsilon*epsilon*theoretical_diffusion(ensemble_temp, Ndynamic);
+	
 	for(int i=0; i<nsteps; i++)
 	{
+		Ensemble ensemble_diff = ensemble;
 		ensemble.advance(dt);
 		
 		Ntime.push_back(ensemble.t);
-		Ncoeff_diffusion.push_back( ensemble.avg_action_for_diffusion(ensemble_0)/dt ); 
-		
-		Ensemble ensemble_temp = ensemble;
-		
-		double *period_temp_0;
-		period_temp_0 = new double[ensemble_temp.Nparticles];		
-		for(int j=0; j<ensemble_temp.Nparticles; j++) period_temp_0[j] = 2.0*PI*ensemble_temp.dI_dE[j];
-		
-		//propaga la dinamica simplettica per Ndynamic passi
-		for(int j=0; j<Ndynamic; j++)
-		{		
-			//per ogni particella
-			for(int n=0; n<ensemble_temp.Nparticles; n++)
-			{
-				ensemble_temp.symplectic_advance( ensemble_temp.q[n], ensemble_temp.p[n], period_temp_0[n]/Ndynamic, ensemble_temp.t);
-				
-				//costruisco un segnale di cui vado a fare la FFT
-				q_p_f[n*Ndynamic + j] = pow( ensemble_temp.q[n]*ensemble_temp.p[n]/ensemble_temp.dI_dE[n] , 2.0); // ;
-				//if(i==0) std::cout << " ciao " << ensemble_temp.q[n] << std::endl;
-			}
-			
-			ensemble_temp.t += dtdynamic;
-		}
-		
-		double avg_diffusion_temp = 0.0;
-		
-		for(int n=0; n<ensemble_temp.Nparticles; n++)
-		{
-			//FFT per la traiettoria di ogni particella
-			realft( &q_p_f[n*Ndynamic], Ndynamic );
-			
-			avg_diffusion_temp += q_p_f[n*Ndynamic];	
-			//avg_diffusion_temp += sqrt(q_p_f[n*Ndynamic]*q_p_f[n*Ndynamic] + q_p_f[n*Ndynamic + 1]*q_p_f[n*Ndynamic + 1]) / Ndynamic;	
-		}
-		avg_diffusion_temp /= Ndynamic*ensemble_temp.Nparticles;
-		Ncoeff_diffusion_dynamic.push_back( epsilon*epsilon*avg_diffusion_temp );		
+		Ncoeff_diffusion.push_back( ensemble.avg_action_for_diffusion(ensemble_diff)/dt ); 
 	}
 	
 	coeff_drift = (ensemble.avg_action() - avg_action_0)/dt;
 	coeff_diffusion = slope_linear_regression(Ntime, Ncoeff_diffusion);
-	coeff_diffusion_theoretical = slope_linear_regression(Ntime, Ncoeff_diffusion_dynamic);
-	//coeff_diffusion_theoretical = accumulate(Ncoeff_diffusion_dynamic.begin(), Ncoeff_diffusion_dynamic.end(), 0.0) / Ncoeff_diffusion_dynamic.size();
-		
+	
 		
 	std::cout << "t finale = " << ensemble.t << "\t" << "E[0] finale = " << ensemble.E[0] << std::endl
 			  << "azione[0] finale = " << ensemble.action[0] << "\t" << "dI_dE[0] finale = " << ensemble.dI_dE[0]<< std::endl;
@@ -347,7 +347,7 @@ int main(int argc, char *argv[])
 	std::cout << std::endl;
 	for(int i=0; i<Ncoeff_diffusion_dynamic.size(); i++) std::cout << Ncoeff_diffusion_dynamic[i] << std::endl;
 	
-	
+	/*
 	std::ofstream output;	
 	output.open("diffusion_time.txt");
 	
@@ -358,9 +358,9 @@ int main(int argc, char *argv[])
 	
 	output.close();
 	
-	system("gnuplot plot_diffusion_time.plt");
-	system("gnuplot plot_diffusion_time_loglog.plt");
-	
+	int err = system("gnuplot plot_diffusion_time.plt");
+	err = system("gnuplot plot_diffusion_time_loglog.plt");
+	*/
 	
 	std::cout << std::endl;
 	std::cout << "Fatto!" << std::endl;
