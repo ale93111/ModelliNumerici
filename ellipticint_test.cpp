@@ -33,7 +33,7 @@ double dI_dE_simpson(double E, double a, double b, int N)
 		
 	sum *= dx/6.0;
 			
-	return sum/PI;
+	return sum;
 }
 
 void find_roots(double & root1, double & root2, double & root3, const double a, const double b, const double c) //finds the first 2 roots of a-bx^2+cx^3
@@ -94,6 +94,41 @@ double dI_dE_landen(double a, double b, double c, int N) //ascending
 	double alpha, phi, k, j;
 	
 	alpha = asin(sqrt((b-a)/(c-a)));
+	phi = PI/2.0;
+	k = 1.0;// + sin(alpha);
+	
+	std::cout << "phi 0 " << phi << std::endl;
+	std::cout << "alpha 0 " << alpha << std::endl;
+	std::cout << "k 0 " << k << std::endl;
+	
+	for(int i=0; i<N; i++)
+	{
+		phi = atan( cos(alpha)*tan(phi)) + phi;
+		alpha = asin(2.0/(1.0 + cos(alpha)) - 1.0);
+		
+		k *= 1.0 + sin(alpha); 
+		
+		std::cout << "phi " << phi << std::endl;
+		std::cout << "alpha " << alpha << std::endl;
+		std::cout << "k " << k << std::endl;
+		
+		/*
+		if( alpha < 1e-5 ) {
+			j = i;
+			std::cout << "i " << i << std::endl;
+			break;
+		}
+		*/
+	}
+	std::cout << "2.0/sqrt(b-a) " << 2.0/sqrt(b-a) << std::endl;
+	return (PI*k/2.0)*2.0/sqrt(c-a)*sqrt(3.0/2.0);//pow(2.0, j);
+}
+
+double dI_dE_test(double a, double b, double c, int N) //ascending
+{
+	double alpha, phi, k, j;
+	
+	alpha = asin(sqrt((b-a)/(c-a)));
 	phi = 3.0*PI/2.0;
 	k = 1.0;
 	
@@ -124,13 +159,13 @@ int main(void)
 	
 	std::cout << root1 << " " << root2 << " " << root3 << std::endl;
 	
-	double simpson = dI_dE_simpson(Ei, root1, root2, npoints);
+	//double simpson = dI_dE_simpson(Ei, root1, root2, npoints);
 	double landen  = dI_dE_landen(root1, root2, root3, niterate);
-	double landen2 = dI_dE_landen2(root1, root2, root3, niterate);
+	//double landen2 = dI_dE_landen2(root1, root2, root3, niterate);
 
 	
-	std::cout << "simpson = " << simpson << std::endl;
+	//std::cout << "simpson = " << simpson << std::endl;
 	std::cout << "landen  = " << landen  << std::endl;
-	std::cout << "landen2  = " << landen2  << std::endl;
+	//std::cout << "landen2  = " << landen2  << std::endl;
 	return 0.0;
 }
