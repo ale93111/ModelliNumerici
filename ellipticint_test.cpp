@@ -57,70 +57,44 @@ void find_roots(double & root1, double & root2, double & root3, const double a, 
 	root3 = croot3.real();
 }
 
-double csc(double x)
+double dI_dE_AGM(double a, double b, double c, int N) //ascending
 {
-	std::cout << "x=" << x << " csc(x)= " << -2.0*sin(x)/(cos(2.0*x)-1) << std::endl;
-	return -2.0*sin(x)/(cos(2.0*x)-1);
-}
-
-double dI_dE_landen2(double a, double b, double c, int N) //descending
-{
-	double alpha, phi, k;
-	
-	alpha = asin(sqrt((b-a)/(c-a)));
-	phi = 3.0*PI/2.0;
-	k = 1.0;
-	
-	double alpha_0 = alpha;
-	
-	for(int i=0; i<N; i++)
-	{
-		phi = (asin( sin(alpha)*sin(phi)) + phi)/2.0;
-		alpha = acos(2.0/(1.0 + sin(alpha)) - 1.0);
+	double alpha = asin(sqrt((b-a)/(c-a)));
+	double x, y, z;
+	x = 1.0;
+	y = cos(alpha);
+	z = sin(alpha);
 		
-		k *= 1.0 + sin(alpha);
-		if( alpha > 0.5*PI - 1e-5 ) {
-			std::cout << "i2 " << i << std::endl;
-			break;
-		}
+	for(int i=0; i<N; i++) 
+	{
+		double x_temp = x;
+		double y_temp = y;
+		x = 0.5*(x_temp + y_temp);
+		y = sqrt(x_temp * y_temp);
+		z = 0.5*(x_temp - y_temp);
+		
+		if( z < 1e-10 ) break;
 	}
 	
-	return sqrt(csc(alpha)*k)*log(tan(PI/4.0 + phi/2.0));
+	return PI/(2.0*x);
+	//return phi/(x);
 }
-
 
 double dI_dE_landen(double a, double b, double c, int N) //ascending
 {
-	double alpha, phi, k, j;
-	
-	alpha = asin(sqrt((b-a)/(c-a)));
-	phi = PI/2.0;
-	k = 1.0;// + sin(alpha);
-	
-	std::cout << "phi 0 " << phi << std::endl;
-	std::cout << "alpha 0 " << alpha << std::endl;
-	std::cout << "k 0 " << k << std::endl;
+	double alpha = asin(sqrt((b-a)/(c-a)));
+	double k = 1.0;// + sin(alpha);
 	
 	for(int i=0; i<N; i++)
 	{
-		phi = atan( cos(alpha)*tan(phi)) + phi;
+		//phi = atan( cos(alpha)*tan(phi)) + phi;
 		alpha = asin(2.0/(1.0 + cos(alpha)) - 1.0);
 		
 		k *= 1.0 + sin(alpha); 
 		
-		std::cout << "phi " << phi << std::endl;
-		std::cout << "alpha " << alpha << std::endl;
-		std::cout << "k " << k << std::endl;
+		if( alpha < 1e-10 ) break;
 		
-		/*
-		if( alpha < 1e-5 ) {
-			j = i;
-			std::cout << "i " << i << std::endl;
-			break;
-		}
-		*/
 	}
-	std::cout << "2.0/sqrt(b-a) " << 2.0/sqrt(b-a) << std::endl;
 	return (PI*k/2.0)*2.0/sqrt(c-a)*sqrt(3.0/2.0);//pow(2.0, j);
 }
 
@@ -161,11 +135,11 @@ int main(void)
 	
 	//double simpson = dI_dE_simpson(Ei, root1, root2, npoints);
 	double landen  = dI_dE_landen(root1, root2, root3, niterate);
-	//double landen2 = dI_dE_landen2(root1, root2, root3, niterate);
+	double AGM = 2.0/sqrt(root3-root1)*sqrt(3.0/(2.0*k))*dI_dE_AGM(root1, root2, root3, niterate);
 
 	
 	//std::cout << "simpson = " << simpson << std::endl;
 	std::cout << "landen  = " << landen  << std::endl;
-	//std::cout << "landen2  = " << landen2  << std::endl;
+	std::cout << "AGM  = " << AGM  << std::endl;
 	return 0.0;
 }

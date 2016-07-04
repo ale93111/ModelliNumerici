@@ -10,6 +10,7 @@
 //#include"newton.h"
 
 #define npoints 1000
+#define niterate 10
 #define PI 3.14159265359
 
 std::random_device rd;
@@ -55,16 +56,17 @@ struct Ensemble
 		return w*w*w*w*w*w/(6.0*k*k);
 	}
 	
-	void find_roots(double & root1, double & root2, const double a, const double b, const double c) //finds the first 2 roots of a-bx^2+cx^3
+	void find_roots(double & root1, double & root2, double & root3, const double a, const double b, const double c) //finds the first 2 roots of a-bx^2+cx^3
 	{
-		std::complex<double> croot1, croot2, temp, ctemp, valueplus, valueminus;
+		std::complex<double> croot1, croot2, croot3, temp, ctemp, valueplus, valueminus;
+		
 		if( c == 0.0 ) 
 		{
 			root1 = -sqrt(a/b);
 			root2 =  sqrt(a/b);
 		}
-		else {
-			
+		else 
+		{
 			valueplus =  std::complex<double>(1.0,  sqrt(3.0));
 			valueminus = std::complex<double>(1.0, -sqrt(3.0));
 
@@ -75,9 +77,11 @@ struct Ensemble
 
 			croot1 = b/(3.0*c) - valueminus*temp/(6.0*cbrt(2.0)*c*c*c) -  valueplus*b*b*c/(3.0*cbrt(4.0)*temp);
 			croot2 = b/(3.0*c) -  valueplus*temp/(6.0*cbrt(2.0)*c*c*c) - valueminus*b*b*c/(3.0*cbrt(4.0)*temp);
+			croot3 = b/(3.0*c) + ( temp/(cbrt(2.0)*c*c*c) + (cbrt(2.0)*b*b*c)/temp )/3.0;
 
 			root1 = croot1.real();
 			root2 = croot2.real();
+			root3 = croot3.real();
 		}
 	}
 	
@@ -89,54 +93,80 @@ struct Ensemble
 	
 	double pex(const double & E, const double & x) //action integrando p(E,x)
 	{
-		//if((2.0*E - w*w*x*x + (2.0/3.0)*k*x*x*x) < 0.0) std::cout << "errore " << 2.0*E - w*w*x*x + (2.0/3.0)*k*x*x*x <<std::endl <<std::flush;
 		double temp = 2.0*E - w*w*x*x + (2.0/3.0)*k*x*x*x;
 		return sqrt( temp<1e-10? 0.0 : temp );
 	}
 	
 	double tex(const double & E, const double & x) //action integrando p(E,x)
 	{
-		//if((2.0*E - w*w*x*x + (2.0/3.0)*k*x*x*x) < 0.0) std::cout << "errore " << 2.0*E - w*w*x*x + (2.0/3.0)*k*x*x*x <<std::endl <<std::flush;
 		double temp = (2.0*E - w*w*x*x + (2.0/3.0)*k*x*x*x);
 		return sqrt( temp<1e-10? 0.0 : 1.0/temp );
 	}
 	
-	double action_simpson(double E, double a, double b, int N)
+	double Klanden(double a, int N) //descending
 	{
-		// usare la funzione pex può restituire dei nan perché la funzione find root
-		// approssima i valori numerici degli zeri di pex che è una sqrt quindi può
-		// essere fuori dall'intervallo dove si hanno valori negativi per questo in
-		// pex si controlla il valore prima di returnarlo
-		double sum = 0.0;
-		double dx= (b-a)/N;
-		
-		for (int i=0;i<N;i++)
+		std::complex<double> alpha, k, temp;
+
+		temp.real(a);
+		temp.imag(0.0);
+
+		alpha = std::asin(temp);
+		k = 1.0;
+
+		for(int i=0; i<N; i++)
 		{
-			sum += pex(E, a + i*dx) + 4.0*pex(E, a + 0.5*((i+1)*dx + i*dx) ) + pex(E, a + (i+1)*dx);
+			alpha = std::asin(2.0/(1.0 + std::cos(alpha)) - 1.0);
+
+			k *= 1.0 + std::sin(alpha); 
+
+			if( std::abs(alpha) < 1e-10 ) break;
 		}
-		
-		sum *= dx/6.0;
-			
-		return sum/PI;
+
+		return PI*k.real()/2.0;
+	}
+	double Elanden(double a, int N) //descending
+	{
+		std::complex<double> alpha, k, temp;
+
+		temp.real(a);
+		temp.imag(0.0);
+
+		alpha = std::asin(temp);
+		k = 1.0;
+		std::vector<std::complex<double>> Nalpha;
+		Nalpha.push_back(alpha);
+
+		for(int i=0; i<N; i++)
+		{
+			alpha = std::asin(2.0/(1.0 + std::cos(alpha)) - 1.0);
+			Nalpha.push_back(alpha);
+
+			k *= 1.0 + std::sin(alpha); 
+
+			if( std::abs(alpha) < 1e-10 ) break;		
+		}
+
+		std::complex<double>  c = 1.0 + 0.5*std::sin(Nalpha.back());
+		for(int i=Nalpha.size()-2; i>0; i--) c = 1.0 + 0.5*std::sin(Nalpha[i])*c;
+
+		std::complex<double> t = std::sin(Nalpha.front());
+		c = 1.0 - 0.5*t*t*c;
+
+		std::complex<double> res = PI*k*c/2.0;
+		return res.real();
+	}
+
+	double action_elliptic(double root1, double root2, double root3)
+	{
+		return (2.0/(15.0*PI))*sqrt(2.0*k/3.0)*(sqrt(root2 - root1)*(root2 - root3)*(root1 - 2.0*root2 + root3)
+										*Klanden(sqrt((root3 - root1)/(root2 - root1)), 10) 
+								   + 2.0*sqrt(root2 - root1)*(root1*root1 + root2*root2 + root3*root3 - root2*root3 - root1*(root2 + root3))
+										*Elanden(sqrt((root3 - root1)/(root2 - root1)), 10));
 	}
 	
-	double dI_dE_simpson(double E, double a, double b, int N)
+	double dI_dE_elliptic(double root1, double root2, double root3)
 	{
-		// usare la funzione pex può restituire dei nan perché la funzione find root
-		// approssima i valori numerici degli zeri di pex che è una sqrt quindi può
-		// essere fuori dall'intervallo dove si hanno valori negativi per questo in
-		// pex si controlla il valore prima di returnarlo
-		double sum = 0.0;
-		double dx= (b-a)/N;
-		
-		for (int i=0;i<N;i++)
-		{
-			sum += tex(E, a + i*dx) + 4.0*tex(E, a + 0.5*((i+1)*dx + i*dx) ) + tex(E, a + (i+1)*dx);
-		}
-		
-		sum *= dx/6.0;
-			
-		return sum/PI;
+		return (1.0/PI)*sqrt(3.0/(2.0*k))*(2.0/sqrt(root3 - root1))*Klanden(sqrt((root2 - root1)/(root3 - root1)), 10);
 	}
 	
 	void symplectic_advance(double & q, double & p, const double dt, const double t)
@@ -160,12 +190,12 @@ struct Ensemble
 			
 			E[i] = energy( q[i], p[i]); 
 		
-			double root1, root2;
+			double root1, root2, root3;
 			
-			find_roots(root1, root2, 2.0*E[i], w*w, 2.0*k/3.0);		
+			find_roots(root1, root2, root3, 2.0*E[i], w*w, 2.0*k/3.0);		
 			
-			action[i] = action_simpson(E[i], root1, root2, npoints);
-			dI_dE[i] = dI_dE_simpson(E[i], root1, root2, npoints);
+			action[i] = action_elliptic(root1, root2, root3);
+			dI_dE[i] = dI_dE_elliptic(root1, root2, root3);
 		}
 	}
 	
@@ -194,14 +224,14 @@ struct Ensemble
 		
 		t = 0.0;
 		
-		double root1, root2;
+		double root1, root2, root3;
 		
-		find_roots(root1, root2, 2.0*Ei, w*w, 2.0*k/3.0);
+		find_roots(root1, root2, root3, 2.0*Ei, w*w, 2.0*k/3.0);
 		
-		std::cout << "root 1 = " << root1 << " " << "root2 = " << root2 << std::endl;
+		std::cout << "root 1 = " << root1 << " " << "root2 = " << root2 << "root3 = " << root3 << std::endl;
 		
-		double actioni = action_simpson(Ei, root1, root2, npoints);
-		double dI_dEi = dI_dE_simpson(Ei, root1, root2, npoints);
+		double actioni = action_elliptic(root1, root2, root3);
+		double dI_dEi = dI_dE_elliptic(root1, root2, root3);
 		
 		for(int i=0; i<N; i++) 
 		{
@@ -301,7 +331,7 @@ double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic, double *q_p_f
 int main(int argc, char *argv[])
 {
 
-	int Nensemble = 10000;
+	int Nensemble = 1000000;
 	int nsteps = 10;
 	int Ndynamic = 512;
 	
@@ -315,6 +345,7 @@ int main(int argc, char *argv[])
 	double Emax = w*w*w*w*w*w/(6.0*k*k);
 	
 	std::cout << "Emax = " << Emax << std::endl;
+	std::cout << "Nensemble = " << Nensemble << std::endl;
 	std::cout << std::endl;
 
 	double coeff_drift, coeff_diffusion, coeff_diffusion_theoretical;
@@ -336,7 +367,7 @@ int main(int argc, char *argv[])
 	Ensemble ensemble_temp = ensemble;
 	double *q_p_f;
 	q_p_f = new double[Ndynamic*ensemble_temp.Nparticles];
-	coeff_diffusion_theoretical = epsilon*epsilon*theoretical_diffusion(ensemble_temp, Ndynamic, q_p_f);
+	
 	
 	for(int i=0; i<nsteps; i++)
 	{
@@ -350,7 +381,7 @@ int main(int argc, char *argv[])
 	
 	coeff_drift = slope_linear_regression(Ntime, Ncoeff_drift);//(ensemble.avg_action() - avg_action_0)/dt;
 	coeff_diffusion = slope_linear_regression(Ntime, Ncoeff_diffusion);
-	
+	coeff_diffusion_theoretical = epsilon*epsilon*theoretical_diffusion(ensemble_temp, Ndynamic, q_p_f);
 		
 	std::cout << "t finale = " << ensemble.t << "\t" << "E avg finale = " << ensemble.avg_energy() << std::endl
 			  << "azione avg finale = " << ensemble.avg_action() << "\t" << "dI_dE[0] finale = " << ensemble.dI_dE[0]<< std::endl;
