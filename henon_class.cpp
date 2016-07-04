@@ -7,7 +7,7 @@
 #include <complex> //std::sqrt
 
 #include"fourier.h"
-//#include"newton.h"
+#include"elliptic_int.h"
 
 #define npoints 1000
 #define niterate 10
@@ -103,59 +103,6 @@ struct Ensemble
 		return sqrt( temp<1e-10? 0.0 : 1.0/temp );
 	}
 	
-	double Klanden(double a, int N) //descending
-	{
-		std::complex<double> alpha, k, temp;
-
-		temp.real(a);
-		temp.imag(0.0);
-
-		alpha = std::asin(temp);
-		k = 1.0;
-
-		for(int i=0; i<N; i++)
-		{
-			alpha = std::asin(2.0/(1.0 + std::cos(alpha)) - 1.0);
-
-			k *= 1.0 + std::sin(alpha); 
-
-			if( std::abs(alpha) < 1e-10 ) break;
-		}
-
-		return PI*k.real()/2.0;
-	}
-	double Elanden(double a, int N) //descending
-	{
-		std::complex<double> alpha, k, temp;
-
-		temp.real(a);
-		temp.imag(0.0);
-
-		alpha = std::asin(temp);
-		k = 1.0;
-		std::vector<std::complex<double>> Nalpha;
-		Nalpha.push_back(alpha);
-
-		for(int i=0; i<N; i++)
-		{
-			alpha = std::asin(2.0/(1.0 + std::cos(alpha)) - 1.0);
-			Nalpha.push_back(alpha);
-
-			k *= 1.0 + std::sin(alpha); 
-
-			if( std::abs(alpha) < 1e-10 ) break;		
-		}
-
-		std::complex<double>  c = 1.0 + 0.5*std::sin(Nalpha.back());
-		for(int i=Nalpha.size()-2; i>0; i--) c = 1.0 + 0.5*std::sin(Nalpha[i])*c;
-
-		std::complex<double> t = std::sin(Nalpha.front());
-		c = 1.0 - 0.5*t*t*c;
-
-		std::complex<double> res = PI*k*c/2.0;
-		return res.real();
-	}
-
 	double action_elliptic(double root1, double root2, double root3)
 	{
 		return (2.0/(15.0*PI))*sqrt(2.0*k/3.0)*(sqrt(root2 - root1)*(root2 - root3)*(root1 - 2.0*root2 + root3)
@@ -331,7 +278,7 @@ double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic, double *q_p_f
 int main(int argc, char *argv[])
 {
 
-	int Nensemble = 1000000;
+	int Nensemble = 10000;
 	int nsteps = 10;
 	int Ndynamic = 512;
 	
