@@ -6,13 +6,14 @@
 #include <math.h>	// sqrt
 #include <complex> //std::sqrt
 
-#include"fourier.h"
-#include"elliptic_int.h"
+//#include"fourier.h"
+//#include"elliptic_int.h"
+#include"ensemble_henon.h"
 
 #define npoints 1000
 #define niterate 10
 #define PI 3.14159265359
-
+/*
 std::random_device rd;
 std::mt19937 generator(rd());
 std::normal_distribution<double> gauss_distr(0.0, 1.0);
@@ -214,7 +215,7 @@ struct Ensemble
 		delete p, q, E, action, dI_dE;	
 	}
 };
-
+*/
 
 double slope_linear_regression(const std::vector<double>& x, const std::vector<double>& y)
 {
@@ -234,8 +235,11 @@ double slope_linear_regression(const std::vector<double>& x, const std::vector<d
 	return Sxy / Sxx;
 }
 
-double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic, double *q_p_f)
+double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic/*, double *q_p_f*/)
 {	
+	double *q_p_f;
+	q_p_f = new double[Ndynamic*ensemble_temp.Nparticles];
+	
 	//propaga la dinamica simplettica per Ndynamic passi
 	for(int j=0; j<Ndynamic; j++)
 	{		
@@ -312,8 +316,8 @@ int main(int argc, char *argv[])
 	
 	
 	Ensemble ensemble_temp = ensemble;
-	double *q_p_f;
-	q_p_f = new double[Ndynamic*ensemble_temp.Nparticles];
+	//double *q_p_f;
+	//q_p_f = new double[Ndynamic*ensemble_temp.Nparticles];
 	
 	
 	for(int i=0; i<nsteps; i++)
@@ -328,7 +332,7 @@ int main(int argc, char *argv[])
 	
 	coeff_drift = slope_linear_regression(Ntime, Ncoeff_drift);//(ensemble.avg_action() - avg_action_0)/dt;
 	coeff_diffusion = slope_linear_regression(Ntime, Ncoeff_diffusion);
-	coeff_diffusion_theoretical = epsilon*epsilon*theoretical_diffusion(ensemble_temp, Ndynamic, q_p_f);
+	coeff_diffusion_theoretical = epsilon*epsilon*theoretical_diffusion(ensemble_temp, Ndynamic/*, q_p_f*/);
 		
 	std::cout << "t finale = " << ensemble.t << "\t" << "E avg finale = " << ensemble.avg_energy() << std::endl
 			  << "azione avg finale = " << ensemble.avg_action() << "\t" << "dI_dE[0] finale = " << ensemble.dI_dE[0]<< std::endl;
