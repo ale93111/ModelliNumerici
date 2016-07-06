@@ -52,7 +52,7 @@ void four1(double data[], int nn, int isign)
 //zero padding of complex coefficients
 double* realft(double* data, unsigned long n)
 {
-	double *X = new double[2*n]; 
+	double *X = new double[2*n+1]; 
 	for(int i=0; i<n; i++)
 	{
 		X[2*i+1] = data[i];
@@ -61,7 +61,11 @@ double* realft(double* data, unsigned long n)
 	
 	four1(X, n, 1);
 	
-	return X;
+	double *res = new double[n];
+	
+	for(int i=0; i<n; i++) res[i] = X[i+1];
+	
+	return res;
 }
 
 //Calculates the Fourier transform of a set of n real-valued data points. 
