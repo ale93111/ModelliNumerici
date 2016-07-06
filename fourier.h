@@ -1,5 +1,7 @@
 #include <math.h>	// sqrt
 
+#define PI 3.14159265359
+#define TWOPI	(2.0*PI)
 
 void four1(double data[], int nn, int isign)
 {
@@ -47,6 +49,21 @@ void four1(double data[], int nn, int isign)
     }
 }
 
+//zero padding of complex coefficients
+double* realft(double* data, unsigned long n)
+{
+	double *X = new double[2*n]; 
+	for(int i=0; i<n; i++)
+	{
+		X[2*i+1] = data[i];
+		X[2*i+2] = 0.0;
+	}	
+	
+	four1(X, n, 1);
+	
+	return X;
+}
+
 //Calculates the Fourier transform of a set of n real-valued data points. 
 //Replaces this data (which is stored in array data[1..n]) 
 //by the positive frequency half of its complex Fourier transform.
@@ -54,6 +71,7 @@ void four1(double data[], int nn, int isign)
 //data[1] and data[2], respectively. n must be a power of 2. This routine also calculates the
 //inverse transform of a complex data array if it is the transform of real data. 
 //(Result in this case must be multiplied by 2/n.)
+/*
 void realft(double* data, unsigned long n)
 {
 	unsigned long i,i1,i2,i3,i4,np3;
@@ -100,3 +118,5 @@ void realft(double* data, unsigned long n)
 	//Squeeze the first and last data together to get them all within the original array.
 	data[1] = h1r-data[1];
 }
+
+*/
