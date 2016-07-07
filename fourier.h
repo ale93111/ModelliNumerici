@@ -49,7 +49,7 @@ void four1(double data[], int nn, int isign)
     }
 }
 
-//zero padding of complex coefficients
+//zero padding of complex components
 void realft(double* data, unsigned long n)
 {
 	double *X = new double[2*n+1]; 
