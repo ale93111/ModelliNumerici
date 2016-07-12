@@ -6,19 +6,39 @@
 #include <math.h>	// sqrt
 #include <complex> //std::sqrt
 
-#include"fourier.h"
-#include"elliptic_int.h"
-
 #define npoints 1000
 #define PI 3.14159265359
+
+//#ifndef ENSEMBLE_HENON_H
+//#define ENSEMBLE_HENON_H
+
+#include"fourier.h"
+#include"elliptic_int.h"
+//#include"newton.h" included after definition of struct newton_func
 
 std::random_device rd;
 std::mt19937 generator(rd());
 std::normal_distribution<double> gauss_distr(0.0, 1.0);
 std::uniform_real_distribution<double> uniform_distr(-1, 1);
 
+struct Newton_func
+{
+	//friend struct Ensemble;
+	double I0, b, c;
+	void (Newton_func::*fpointer)(double, double *, double *);
+	
+	void newtonfunc(double x, double *f, double *df);
+	
+	Newton_func(){}
+	Newton_func(double I0i, double bi, double ci) : I0(I0i), b(bi), c(ci) {}
+};
+//include newton after definition of struct newton_func
+#include"newton.h"
+
 struct Ensemble
 {
+	//friend struct Newton_func;
+		
 	double *p, *q, *E, *action, *dI_dE;
 	double w, k, epsilon, t;
 	int Nparticles;
@@ -83,7 +103,6 @@ struct Ensemble
 			root3 = croot3.real();
 		}
 	}
-	
 	
 	double energy(const double & q, const double & p)
 	{
@@ -184,6 +203,39 @@ struct Ensemble
 		}
 	}	
 	
+	Ensemble(int N, double wi, double ki, double epsiloni, double actioni, char Vi) //: Ensemble( N )
+	{
+		allocator(N);
+		Nparticles = N;
+		w = wi;
+		k = ki;
+		epsilon = epsiloni;
+		t = 0.0;
+		
+		double root1, root2, root3;
+
+		Newton_func fnew(actioni, w*w, 2.0*k/3.0);
+	
+		fnew.fpointer = &Newton_func::newtonfunc;
+			
+		double Ei = rtsafe(fnew, fnew.fpointer, 0.1*energy_max(), 0.9*energy_max(), 1e-5);
+			
+		find_roots(root1, root2, root3, 2.0*Ei, w*w, 2.0*k/3.0);
+		
+		double dI_dEi = dI_dE_elliptic(root1, root2, root3);
+
+		
+		for(int i=0; i<N; i++) 
+		{
+			E[i] = Ei;
+			double nr = uniform_distr(generator);
+			q[i] = (nr<0.0)? -nr*root1 : nr*root2;
+			p[i] = pex(Ei, q[i]);
+			action[i] = actioni;
+			dI_dE[i] = dI_dEi;
+		}
+	}
+	
 	Ensemble& operator=(Ensemble&& other)
 	{
 		w = other.w;
@@ -232,3 +284,18 @@ struct Ensemble
 	}
 };
 
+void Newton_func::newtonfunc(double x, double *f, double *df)
+{
+	Ensemble ensemble;
+	ensemble.allocator(1);
+	ensemble.w = sqrt(b);
+	ensemble.k = 3.0*c/2.0;
+	
+	double root1, root2, root3;
+	ensemble.find_roots(root1, root2, root3, 2.0*x, b, c);
+		
+	f[0] = ensemble.action_elliptic(root1, root2, root3) - I0;
+	df[0] = ensemble.dI_dE_elliptic(root1, root2, root3);
+}
+
+//#endif
