@@ -32,6 +32,36 @@ std::uniform_real_distribution<double> uniform_distr(-1, 1);
 
 
 */
+
+void find_roots(double & root1, double & root2, double & root3, const double a, const double b, const double c) //finds the first 2 roots of a-bx^2+cx^3
+{
+	std::complex<double> croot1, croot2, croot3, temp, ctemp, valueplus, valueminus;
+	
+	if( c == 0.0 ) 
+	{
+		root1 = -sqrt(a/b);
+		root2 =  sqrt(a/b);
+	}
+	else 
+	{
+		valueplus =  std::complex<double>(1.0,  sqrt(3.0));
+		valueminus = std::complex<double>(1.0, -sqrt(3.0));
+
+		ctemp =  std::sqrt( std::complex<double>( 27.0*a*a*pow(c, 16.0) - 4.0*a*b*b*b*pow(c, 14.0), 0.0 ));
+		ctemp = 3.0*sqrt(3.0)*ctemp - 27.0*a*pow(c, 8.0) + 2.0*b*b*b*pow(c, 6.0);
+
+		temp = std::pow(ctemp, 1.0/3.0);
+
+		croot1 = b/(3.0*c) - valueminus*temp/(6.0*cbrt(2.0)*c*c*c) -  valueplus*b*b*c/(3.0*cbrt(4.0)*temp);
+		croot2 = b/(3.0*c) -  valueplus*temp/(6.0*cbrt(2.0)*c*c*c) - valueminus*b*b*c/(3.0*cbrt(4.0)*temp);
+		croot3 = b/(3.0*c) + ( temp/(cbrt(2.0)*c*c*c) + (cbrt(2.0)*b*b*c)/temp )/3.0;
+
+		root1 = croot1.real();
+		root2 = croot2.real();
+		root3 = croot3.real();
+	}
+}
+
 struct Newton_func
 {
 	//friend struct Ensemble;
@@ -99,41 +129,16 @@ struct Ensemble
 	void check_energy(int index)
 	{
 		// è poco efficiente eliminare valori che non sono allocati alla fine!
-		p.erase( p.begin() + index );
-		q.erase( q.begin() + index );
-		E.erase( E.begin() + index );
-		action.erase( action.begin() + index );
-		dI_dE.erase( dI_dE.begin() + index );
-	}
-	
-	void find_roots(double & root1, double & root2, double & root3, const double a, const double b, const double c) //finds the first 2 roots of a-bx^2+cx^3
-	{
-		std::complex<double> croot1, croot2, croot3, temp, ctemp, valueplus, valueminus;
-		
-		if( c == 0.0 ) 
+		if( E[index] < 0.1*energy_max() || E[index] > 0.9*energy_max() )
 		{
-			root1 = -sqrt(a/b);
-			root2 =  sqrt(a/b);
-		}
-		else 
-		{
-			valueplus =  std::complex<double>(1.0,  sqrt(3.0));
-			valueminus = std::complex<double>(1.0, -sqrt(3.0));
-
-			ctemp =  std::sqrt( std::complex<double>( 27.0*a*a*pow(c, 16.0) - 4.0*a*b*b*b*pow(c, 14.0), 0.0 ));
-			ctemp = 3.0*sqrt(3.0)*ctemp - 27.0*a*pow(c, 8.0) + 2.0*b*b*b*pow(c, 6.0);
-
-			temp = std::pow(ctemp, 1.0/3.0);
-
-			croot1 = b/(3.0*c) - valueminus*temp/(6.0*cbrt(2.0)*c*c*c) -  valueplus*b*b*c/(3.0*cbrt(4.0)*temp);
-			croot2 = b/(3.0*c) -  valueplus*temp/(6.0*cbrt(2.0)*c*c*c) - valueminus*b*b*c/(3.0*cbrt(4.0)*temp);
-			croot3 = b/(3.0*c) + ( temp/(cbrt(2.0)*c*c*c) + (cbrt(2.0)*b*b*c)/temp )/3.0;
-
-			root1 = croot1.real();
-			root2 = croot2.real();
-			root3 = croot3.real();
+			p.erase( p.begin() + index );
+			q.erase( q.begin() + index );
+			E.erase( E.begin() + index );
+			action.erase( action.begin() + index );
+			dI_dE.erase( dI_dE.begin() + index );
 		}
 	}
+
 	
 	double energy(const double & q, const double & p)
 	{
@@ -368,7 +373,7 @@ void Newton_func::newtonfunc(double x, double *f, double *df)
 	ensemble.k = 3.0*c/2.0;
 	
 	double root1, root2, root3;
-	ensemble.find_roots(root1, root2, root3, 2.0*x, b, c);
+	find_roots(root1, root2, root3, 2.0*x, b, c);
 		
 	f[0] = ensemble.action_elliptic(root1, root2, root3) - I0;
 	df[0] = ensemble.dI_dE_elliptic(root1, root2, root3);
