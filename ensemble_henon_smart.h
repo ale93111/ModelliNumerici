@@ -20,7 +20,18 @@ std::random_device rd;
 std::mt19937 generator(rd());
 std::normal_distribution<double> noise_gauss_distr(0.0, 1.0);
 std::uniform_real_distribution<double> uniform_distr(-1, 1);
+/*
+//come si possono sistemare i file header per separare le dipendenze da newton?
+//usare allocator nel costruttore di default?
+//come eliminare in modo giusto gli smart pointers? sistemare l'uso di allocator e il distruttore!
+//l'operatore = può usare la lista di inizializzazione come i costruttori?
+//cosa succedeva se il costruttore di copie incaricava altri costruttori?
+//è corretto il modo di fare overload dei costruttori per inizializzazione a partire da due variabili diverse? come si fa di solito?
+//come rimuovere correttamente le particelle senza modi troppo complicati ma molto performanti?
+//fare un unico file gnuplot?? fare gli istogrammi con gnuplot?
 
+
+*/
 struct Newton_func
 {
 	//friend struct Ensemble;
@@ -39,7 +50,8 @@ struct Ensemble
 {
 	//friend struct Newton_func;
 		
-	double *p, *q, *E, *action, *dI_dE;
+	//double *p, *q, *E, *action, *dI_dE;
+	std::vector<double> p, q, E, action, dI_dE;
 	double w, k, epsilon, t;
 	int Nparticles;
 	
@@ -61,6 +73,15 @@ struct Ensemble
 		return avg/Nparticles;
 	}
 	
+	double avg_dI_dE()
+	{
+		double avg = 0.0;
+		
+		for(int i=0; i<Nparticles; i++) avg += dI_dE[i];
+		
+		return avg/Nparticles;
+	}
+	
 	double avg_action_for_diffusion( const Ensemble & ensemble)
 	{
 		double avg = 0.0;
@@ -73,6 +94,16 @@ struct Ensemble
 	double energy_max()
 	{
 		return w*w*w*w*w*w/(6.0*k*k);
+	}
+	
+	void check_energy(int index)
+	{
+		// è poco efficiente eliminare valori che non sono allocati alla fine!
+		p.erase( p.begin() + index );
+		q.erase( q.begin() + index );
+		E.erase( E.begin() + index );
+		action.erase( action.begin() + index );
+		dI_dE.erase( dI_dE.begin() + index );
 	}
 	
 	void find_roots(double & root1, double & root2, double & root3, const double a, const double b, const double c) //finds the first 2 roots of a-bx^2+cx^3
@@ -125,7 +156,7 @@ struct Ensemble
 	{
 		return (2.0/(15.0*PI))*sqrt(2.0*k/3.0)*(sqrt(root2 - root1)*(root2 - root3)*(root1 - 2.0*root2 + root3)
 										*Klanden(sqrt((root3 - root1)/(root2 - root1)), 10) 
-								   + 2.0*sqrt(root2 - root1)*(root1*root1 + root2*root2 + root3*root3 - root2*root3 - root1*(root2 + root3))
+			  			 + 2.0*sqrt(root2 - root1)*(root1*root1 + root2*root2 + root3*root3 - root2*root3 - root1*(root2 + root3))
 										*Elanden(sqrt((root3 - root1)/(root2 - root1)), 10));
 	}
 	
@@ -167,11 +198,11 @@ struct Ensemble
 		
 	void allocator( int N )
 	{
-		p = new double[N];
-		q = new double[N];
-		E = new double[N];
-		action = new double[N];
-		dI_dE = new double[N];	
+		p.resize( N, 0);
+		q.resize( N, 0);
+		E.resize( N, 0);
+		action.resize( N, 0);
+		dI_dE.resize( N, 0);
 	}
 	
 	Ensemble(){}
@@ -325,7 +356,7 @@ struct Ensemble
 	
 	~Ensemble()	
 	{
-		delete p, q, E, action, dI_dE;	
+		//delete p, q, E, action, dI_dE;	
 	}
 };
 

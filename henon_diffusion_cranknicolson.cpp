@@ -18,22 +18,18 @@ int main(void)
 {
 	std::vector<double> numbers;
 
-	//Create an input file stream
-	std::ifstream in("diffusion_action.txt");
+	std::ifstream in("diffusion_action.txt"); //Create an input file stream
 
 	double number;  //Variable to hold each number as it is read
 	
-    //Read number using the extraction (>>) operator
-    while (in >> number) {
-		//Add the number to the end of the array
-		numbers.push_back(number);
+    while (in >> number) { //Read number using the extraction (>>) operator
+		numbers.push_back(number);//Add the number to the end of the array
 	}
 
-	//Close the file stream
-	in.close();
+	in.close(); //Close the file stream
 
 	
-	int N = numbers.size()/2 - 2;
+	int N = numbers.size()/2 - 2; //without boundaries that are used to evaluate D in the edges
 			
 	//memory allocation
 	double *x,*ro,*D,*mu;
@@ -47,17 +43,17 @@ int main(void)
 	{
 		x[i] = numbers[2*i];
 		D[i] = numbers[2*i+1];
-		mu[i] = -0.5*x[i];
+		//mu[i] = -0.5*x[i]; //not used
 	}
 	
 	for(int i=1; i<N; i++)
 	{
-		ro[i] = gauss(x[i], 0.075, 0.005);
+		ro[i] = gauss(x[i], 0.040, 0.005);
 	} 
 	ro[0] = 0.0;
 	ro[N-1] = 0.0;
 
-	int Npassi = 2000;
+	int Npassi = 20000;
 	double dt = 0.0001;
 	double h = (x[N+1]-x[0])/(double)(N+1);
 	std::cout << h << std::endl;
