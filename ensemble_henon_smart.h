@@ -14,24 +14,12 @@
 
 #include"fourier.h"
 #include"elliptic_int.h"
-//#include"newton.h" included after definition of struct newton_func
+//#include"newton.h" 
 
 std::random_device rd;
 std::mt19937 generator(rd());
 std::normal_distribution<double> noise_gauss_distr(0.0, 1.0);
 std::uniform_real_distribution<double> uniform_distr(-1, 1);
-/*
-//come si possono sistemare i file header per separare le dipendenze da newton?
-//usare allocator nel costruttore di default?
-//come eliminare in modo giusto gli smart pointers? sistemare l'uso di allocator e il distruttore!
-//l'operatore = può usare la lista di inizializzazione come i costruttori?
-//cosa succedeva se il costruttore di copie incaricava altri costruttori?
-//è corretto il modo di fare overload dei costruttori per inizializzazione a partire da due variabili diverse? come si fa di solito?
-//come rimuovere correttamente le particelle senza modi troppo complicati ma molto performanti?
-//fare un unico file gnuplot?? fare gli istogrammi con gnuplot?
-
-
-*/
 
 void find_roots(double & root1, double & root2, double & root3, const double a, const double b, const double c) //finds the first 2 roots of a-bx^2+cx^3
 {
@@ -62,19 +50,7 @@ void find_roots(double & root1, double & root2, double & root3, const double a, 
 	}
 }
 
-struct Newton_func
-{
-	//friend struct Ensemble;
-	double I0, b, c;
-	void (Newton_func::*fpointer)(double, double *, double *);
-	
-	void newtonfunc(double x, double *f, double *df);
-	
-	Newton_func(){}
-	Newton_func(double I0i, double bi, double ci) : I0(I0i), b(bi), c(ci) {}
-};
-//include newton after definition of struct newton_func
-#include"newton.h"
+//void newtonfunc(double x, double *f, double *df, double I0);
 
 struct Ensemble
 {
@@ -200,7 +176,17 @@ struct Ensemble
 		}
 	}
 	
+	void newtonfunc(double x, double *f, double *df, double I0)
+	{	
+		double root1, root2, root3;
+		find_roots(root1, root2, root3, 2.0*x, w*w, 2.0*k/3.0);
 		
+		f[0] = action_elliptic(root1, root2, root3) - I0;
+		df[0] = dI_dE_elliptic(root1, root2, root3);
+	}
+	
+	double rtsafe(double x1, double x2, double xacc, double offset);
+	
 	void allocator( int N )
 	{
 		p.resize( N, 0);
@@ -212,7 +198,7 @@ struct Ensemble
 	
 	Ensemble(){}
 	
-	Ensemble(int N, double wi, double ki, double epsiloni, double Ei) : Nparticles(N), w(wi), k(ki), epsilon(epsiloni) //: Ensemble( N )
+	Ensemble(int N, double wi, double ki, double epsiloni, double Ei) : Nparticles(N), w(wi), k(ki), epsilon(epsiloni) 
 	{
 		allocator(N);
 		t = 0.0;
@@ -220,9 +206,7 @@ struct Ensemble
 		double root1, root2, root3;
 		
 		find_roots(root1, root2, root3, 2.0*Ei, w*w, 2.0*k/3.0);
-		
-		//std::cout << "root 1 = " << root1 << " root2 = " << root2 << " root3 = " << root3 << std::endl;
-		
+				
 		double actioni = action_elliptic(root1, root2, root3);
 		double dI_dEi = dI_dE_elliptic(root1, root2, root3);
 		
@@ -237,18 +221,14 @@ struct Ensemble
 		}
 	}	
 	
-	Ensemble(int N, double wi, double ki, double epsiloni, double actioni, char Vi) : Nparticles(N), w(wi), k(ki), epsilon(epsiloni)//: Ensemble( N )
+	Ensemble(int N, double wi, double ki, double epsiloni, double actioni, char Vi) : Nparticles(N), w(wi), k(ki), epsilon(epsiloni)
 	{
 		allocator(N);
 		t = 0.0;
 		
 		double root1, root2, root3;
-
-		Newton_func fnew(actioni, w*w, 2.0*k/3.0);
-	
-		fnew.fpointer = &Newton_func::newtonfunc;
 			
-		double Ei = rtsafe(fnew, fnew.fpointer, 0.1*energy_max(), 0.9*energy_max(), 1e-5);
+		double Ei = rtsafe( 0.1*energy_max(), 0.9*energy_max(), 1e-5, actioni);
 			
 		find_roots(root1, root2, root3, 2.0*Ei, w*w, 2.0*k/3.0);
 		
@@ -264,20 +244,9 @@ struct Ensemble
 			action[i] = actioni;
 			dI_dE[i] = dI_dEi;
 		}
-		/*
-		for(int n=0; n<N; n++)
-		{
-			int Rindex = (int)abs(1000.0*(uniform_distr(generator)));
-			//std::cout << Rindex << std::endl;
-			for(int i=0; i<Rindex; i++)
-			{
-				symplectic_advance(q[n], p[n], 2.0*PI*dI_dE[n]/1000.0, t);
-			}
-		}
-		*/
 	}
 	
-	Ensemble(int N, double wi, double ki, double epsiloni, double mean, double devstd, char Vi) : Nparticles(N), w(wi), k(ki), epsilon(epsiloni)//: Ensemble( N )
+	Ensemble(int N, double wi, double ki, double epsiloni, double mean, double devstd, char Vi) : Nparticles(N), w(wi), k(ki), epsilon(epsiloni)
 	{
 		allocator(N);
 		t = 0.0;
@@ -295,12 +264,8 @@ struct Ensemble
 			do
 			{
 				actioni = gauss_distr(generator);
-				
-				Newton_func fnew(actioni, w*w, 2.0*k/3.0);
-			
-				fnew.fpointer = &Newton_func::newtonfunc;
-			
-				Ei = rtsafe(fnew, fnew.fpointer, Ea, Eb, 1e-5);
+		
+				Ei = rtsafe(Ea, Eb, 1e-5, actioni);
 			} 
 			while( Ei < Ea || Ei > Eb);
 			
@@ -339,7 +304,7 @@ struct Ensemble
 		return *this;
 	}
 	
-	Ensemble( const Ensemble& other ) //: Ensemble( other.Nparticles )
+	Ensemble( const Ensemble& other )
 	{
 		w = other.w;
 		k = other.k;
@@ -359,24 +324,72 @@ struct Ensemble
 		}
 	}
 	
-	~Ensemble()	
-	{
-		//delete p, q, E, action, dI_dE;	
-	}
+	//~Ensemble()	{ delete p, q, E, action, dI_dE;	}
 };
 
-void Newton_func::newtonfunc(double x, double *f, double *df)
+//from Numerical recipe in c
+double Ensemble::rtsafe(double x1, double x2, double xacc, double offset = 0.0)
 {
-	Ensemble ensemble;
-	ensemble.allocator(1);
-	ensemble.w = sqrt(b);
-	ensemble.k = 3.0*c/2.0;
+	//Maximum allowed number of iterations.
+	const int MAXIT = 100;
+	int j;
+	double df,dx,dxold,f,fh,fl;
+	double temp,xh,xl,rts;
 	
-	double root1, root2, root3;
-	find_roots(root1, root2, root3, 2.0*x, b, c);
-		
-	f[0] = ensemble.action_elliptic(root1, root2, root3) - I0;
-	df[0] = ensemble.dI_dE_elliptic(root1, root2, root3);
+	newtonfunc(x1,&fl,&df,offset);
+	newtonfunc(x2,&fh,&df,offset);
+	
+	if ((fl > 0.0 && fh > 0.0) || (fl < 0.0 && fh < 0.0))
+		std::cout << "Root must be bracketed in rtsafe" << std::endl;
+	if (fl == 0.0) return x1;
+	if (fh == 0.0) return x2;
+	if (fl < 0.0) {
+		//Orient the search so that f(xl)<0. 
+		xl=x1;
+		xh=x2;
+	} else {
+		xh=x1;
+		xl=x2;
+	}
+	rts=0.5*(x1+x2);
+	//Initialize the  guess  for root,
+	dxold=fabs(x2-x1);
+	//the “stepsize  before  last,”
+	dx=dxold;
+	//and  the  last  step.
+	newtonfunc(rts,&f,&df,offset);
+	for (j=1;j<=MAXIT;j++) {
+		//Loop  over  allowed  iterations.
+		if ((((rts-xh)*df-f)*((rts-xl)*df-f) > 0.0)
+		//Bisect if Newton out of range,
+		|| (fabs(2.0*f) > fabs(dxold*df))) {
+		//or not decreasing fast enough.
+			dxold=dx;
+			dx=0.5*(xh-xl);
+			rts=xl+dx;
+			if (xl == rts) return rts;
+			//Change  in root  is negligible.
+		} else {
+			//Newton  step acceptable.  Take it.
+			dxold=dx;
+			dx=f/df;
+			temp=rts;
+			rts -= dx;
+			if (temp == rts) return rts;
+		}
+		if (fabs(dx) < xacc) return rts;
+		//Convergence  criterion.
+		newtonfunc(rts,&f,&df,offset);
+		//The  one  new  function  evaluation  per  iteration.
+		if (f < 0.0)
+		//Maintain the  bracket  on the root.
+			xl=rts;
+		else
+			xh=rts;
+	}
+	std::cout << "Maximum number of iterations exceeded in rtsafe" << std::endl;
+	return 0.0;
+	//Never  get  here.
 }
 
 //#endif
