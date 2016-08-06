@@ -6,7 +6,7 @@
 #include <math.h>	// sqrt
 #include <complex> //std::sqrt
 
-#include "ensemble_henon.h"
+#include "ensemble_henon_smart.h"
 #include "cranknicolson.h"
 
 double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic)
@@ -59,8 +59,8 @@ int main(void)
 		
 	double Ea, Eb;
 	
-	Ea = 0.02;
-	Eb = 0.14;
+	Ea = 0.1*Emax;
+	Eb = 0.9*Emax;
 	
 	Ensemble *ensemble = new Ensemble[n];
 	

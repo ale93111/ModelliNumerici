@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 {
 
 	int Nensemble = 10000;
-	int nsteps = 10;
+	int nsteps = 2000;
 	int Ndynamic = 512;
 	
 	double w = 1.0;
@@ -38,8 +38,8 @@ int main(int argc, char *argv[])
 	
 	Ensemble ensemble_0 = ensemble; //save a copy of the initial ensemble
 	
-	std::cout << "t iniziale = " << ensemble.t << "\t" << "E avg iniziale = " << ensemble.avg_energy() << std::endl
-			  << "azione avg iniziale = " << ensemble.avg_action() << "\t" << "dI_dE avg iniziale = " << ensemble.avg_dI_dE() << std::endl;
+	std::cout << "t iniziale = " << ensemble.t << "\t\t" << "E avg iniziale = " << ensemble.avg_energy() << std::endl
+			  << "azione avg iniziale = " << ensemble.avg_action() << "\t\t" << "dI_dE avg iniziale = " << ensemble.avg_dI_dE() << std::endl;
 	
 	
 	for(int i=0; i<nsteps; i++)
@@ -47,14 +47,15 @@ int main(int argc, char *argv[])
 		ensemble.advance(dt);
 	}
 	
-	std::cout << "t finale = " << ensemble.t << "\t" << "E avg finale = " << ensemble.avg_energy() << std::endl
-			  << "azione avg finale = " << ensemble.avg_action() << "\t" << "dI_dE avg finale = " << ensemble.avg_dI_dE()<< std::endl;
-	
+	std::cout << "t finale = " << ensemble.t << " (*epsilon = " << epsilon*ensemble.t << " ) " << "\t\t" << "E avg finale = " << ensemble.avg_energy() << std::endl
+			  << "azione avg finale = " << ensemble.avg_action() << "\t\t" << "dI_dE avg finale = " << ensemble.avg_dI_dE()<< std::endl;
 	
 	std::cout << std::endl;
 	
+	std::cout << "Nensemble finale = " << ensemble.Nparticles << std::endl;
+	
 	int err;
-	/*
+	
 	//salvare su file
 	std::ofstream output;	
 	output.open("henon_noise_diffusion.txt");
@@ -70,7 +71,7 @@ int main(int argc, char *argv[])
 
 	std::cout << std::endl;
 	std::cout << "Fatto!" << std::endl;
-	*/
+	
 	return 0;
 	
 }

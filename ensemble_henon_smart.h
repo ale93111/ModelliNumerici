@@ -5,6 +5,7 @@
 #include <algorithm> // std::max
 #include <math.h>	// sqrt
 #include <complex> //std::sqrt
+#include <omp.h> //OpenMP 
 
 #define npoints 1000
 #define PI 3.14159265359
@@ -17,7 +18,14 @@
 //#include"newton.h" 
 
 std::random_device rd;
-std::mt19937 generator(rd());
+//std::mt19937 generator(rd());
+
+#ifdef _OPENMP
+std::mt19937 generator(omp_get_thread_num());
+#else
+std::mt19937 generator(0);//rd());
+#endif
+
 std::normal_distribution<double> noise_gauss_distr(0.0, 1.0);
 std::uniform_real_distribution<double> uniform_distr(-1, 1);
 
@@ -58,6 +66,7 @@ struct Ensemble
 		
 	//double *p, *q, *E, *action, *dI_dE;
 	std::vector<double> p, q, E, action, dI_dE;
+	std::vector<int> deletedlist;
 	double w, k, epsilon, t;
 	int Nparticles;
 	
@@ -65,6 +74,7 @@ struct Ensemble
 	{
 		double avg = 0.0;
 		
+		//#pragma omp parallel for reduction(+:avg)
 		for(int i=0; i<Nparticles; i++) avg += E[i];
 		
 		return avg/Nparticles;
@@ -74,6 +84,7 @@ struct Ensemble
 	{
 		double avg = 0.0;
 		
+		//#pragma omp parallel for reduction(+:avg)
 		for(int i=0; i<Nparticles; i++) avg += action[i];
 		
 		return avg/Nparticles;
@@ -83,6 +94,7 @@ struct Ensemble
 	{
 		double avg = 0.0;
 		
+		//#pragma omp parallel for reduction(+:avg)
 		for(int i=0; i<Nparticles; i++) avg += dI_dE[i];
 		
 		return avg/Nparticles;
@@ -92,6 +104,7 @@ struct Ensemble
 	{
 		double avg = 0.0;
 		
+		//#pragma omp parallel for reduction(+:avg)
 		for(int i=0; i<Nparticles; i++) avg += pow(action[i] - ensemble.action[i], 2.0);
 		
 		return avg/Nparticles;
@@ -107,11 +120,23 @@ struct Ensemble
 		// è poco efficiente eliminare valori che non sono allocati alla fine!
 		if( E[index] < 0.1*energy_max() || E[index] > 0.9*energy_max() )
 		{
+			if(p.empty()) 
+			{
+				Nparticles = 0;
+				return;
+			}
+			
+			//erase particle
 			p.erase( p.begin() + index );
 			q.erase( q.begin() + index );
 			E.erase( E.begin() + index );
 			action.erase( action.begin() + index );
 			dI_dE.erase( dI_dE.begin() + index );
+		
+			//update number of particles
+			Nparticles = p.size();
+			//store index
+			deletedlist.push_back(index);
 		}
 	}
 
@@ -157,10 +182,11 @@ struct Ensemble
 		
 		t +=dt;
 		
+		#pragma omp parallel for 
 		for(int i=0; i<Nparticles; i++)
 		{
 			symplectic_advance(q[i], p[i], dt/2.0, t);
-		
+			
 			p[i] += epsilon*q[i]*sqrt(dt)*noise_gauss_distr(generator);
 		
 			symplectic_advance(q[i], p[i], dt/2.0, t);
@@ -173,6 +199,8 @@ struct Ensemble
 			
 			action[i] = action_elliptic(root1, root2, root3);
 			dI_dE[i] = dI_dE_elliptic(root1, root2, root3);
+			
+			check_energy(i);
 		}
 	}
 	
@@ -210,10 +238,13 @@ struct Ensemble
 		double actioni = action_elliptic(root1, root2, root3);
 		double dI_dEi = dI_dE_elliptic(root1, root2, root3);
 		
+		#pragma omp parallel for 
 		for(int i=0; i<N; i++) 
 		{
 			E[i] = Ei;
+			
 			double nr = uniform_distr(generator);
+			
 			q[i] = (nr<0.0)? -nr*root1 : nr*root2;
 			p[i] = pex(Ei, q[i]);
 			action[i] = actioni;
@@ -234,11 +265,13 @@ struct Ensemble
 		
 		double dI_dEi = dI_dE_elliptic(root1, root2, root3);
 
-		
+		#pragma omp parallel for 
 		for(int i=0; i<N; i++) 
 		{
 			E[i] = Ei;
+			
 			double nr = uniform_distr(generator);
+			
 			q[i] = (nr<0.0)? -nr*root1 : nr*root2;
 			p[i] = pex(Ei, q[i]);
 			action[i] = actioni;
@@ -256,6 +289,7 @@ struct Ensemble
 		double Ea = 0.1*energy_max();
 		double Eb = 0.9*energy_max();
 		
+		#pragma omp parallel for 
 		for(int i=0; i<N; i++)
 		{
 			double Ei, actioni;
@@ -274,7 +308,9 @@ struct Ensemble
 			dI_dE[i] = dI_dE_elliptic(root1, root2, root3);
 			
 			E[i] = Ei;
+			
 			double nr = uniform_distr(generator);
+			
 			q[i] = (nr<0.0)? -nr*root1 : nr*root2;
 			p[i] = pex(Ei, q[i]);
 			action[i] = actioni;
@@ -283,6 +319,28 @@ struct Ensemble
 	
 	
 	Ensemble& operator=(Ensemble&& other)
+	{
+		w = other.w;
+		k = other.k;
+		epsilon = other.epsilon;
+		t = other.t;
+		Nparticles = other.Nparticles;
+		
+		allocator(other.Nparticles);
+		
+		for(int i=0; i<Nparticles; i++) 
+		{
+			E[i] = other.E[i];
+			q[i] = other.q[i];
+			p[i] = other.p[i];
+			action[i] = other.action[i];
+			dI_dE[i] = other.dI_dE[i];
+		}
+		
+		return *this;
+	}
+	
+	Ensemble& operator=(Ensemble& other)
 	{
 		w = other.w;
 		k = other.k;
