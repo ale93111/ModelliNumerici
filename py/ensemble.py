@@ -153,7 +153,7 @@ plt.ylabel('p')
 #%%
 #phase space distribution
 #TODO (low priority) non è corretta, dovrebbe essere distribuita uniforme rispetto l'angolo
-Nparticles = 40
+Nparticles = 100
 test = ensemble.PyEnsemble(Nparticles,w,k,epsilon,0.1)
 
 plt.figure(figsize=(12,12))

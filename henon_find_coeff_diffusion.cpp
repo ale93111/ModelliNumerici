@@ -72,7 +72,7 @@ int main(void)
 	double Ib = ensemble[n-1].avg_action();
 	
 	double dI = (Ib - Ia)/(double)(n-1);
-	std::cout << dI << std::endl;
+	std::cout << "dI = " << dI << std::endl;
 	I[0] = Ia;
 	I[n-1] = Ib;
 	for(int i=1; i<n; i++) I[i] = I[i-1] + dI;
@@ -86,32 +86,6 @@ int main(void)
 	for(int i=0; i<n; i++) Ncoeff_diffusion[i] = epsilon*epsilon*theoretical_diffusion(ensemble[i], Ndynamic);
 	
 	//for(int i=0; i<n; i++) std::cout << "Coeff_diffusion [" << i << "] = " << Ncoeff_diffusion[i] << std::endl;
-	
-	
-	/*
-	int Npassi = 5;
-	double dt = 0.0001;
-	double h = (Eb - Ea)/(double)n;
-	
-	double dE = (Eb - Ea)/(double)(n-1);
-	double *E = new double[n];
-	
-	E[0] = Ea;
-	E[n-1] = Eb;
-	for(int i=1; i<n; i++) E[i] = E[i-1] + dE;
-	
-	for(int i=0; i<n; i++) std::cout << "E [" << i << "] = " << E[i] << std::endl;
-	
-	Ensemble *ensemble = new Ensemble[n];
-	
-	for(int i=0; i<n; i++) ensemble[i] = Ensemble(Nensemble, w, k, epsilon, E[i]);
-
-	double *Ncoeff_diffusion = new double[n];
-	
-	for(int i=0; i<n; i++) Ncoeff_diffusion[i] = epsilon*epsilon*theoretical_diffusion(ensemble[i], Ndynamic);
-	
-	for(int i=0; i<n; i++) std::cout << "Coeff_diffusion [" << i << "] = " << Ncoeff_diffusion[i] << std::endl;
-	*/
 	
 	int err;
 	std::ofstream output;	

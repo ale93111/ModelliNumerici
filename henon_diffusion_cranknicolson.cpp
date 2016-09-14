@@ -56,7 +56,7 @@ int main(void)
 	int Npassi = 20000;
 	double dt = 0.0001;
 	double h = (x[N+1]-x[0])/(double)(N+1);
-	std::cout << h << std::endl;
+	std::cout << "h = " << h << std::endl;
 
 	std::cout << std::endl;
 	std::cout << "Maximum time step = " << h*h/D[N+1] << std::endl;
