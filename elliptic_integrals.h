@@ -4,7 +4,7 @@
 
 #define PI 3.14159265359
 
-double Klanden(double a, int N) //descending
+double Klanden(double a, int N) //descending trasformation
 {
 	std::complex<double> alpha, k, temp;
 
@@ -26,7 +26,7 @@ double Klanden(double a, int N) //descending
 	return PI*k.real()/2.0;
 }
 
-double Elanden(double a, int N) //descending
+double Elanden(double a, int N) //descending trasformation
 {
 	std::complex<double> alpha, k, temp;
 

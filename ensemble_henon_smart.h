@@ -7,15 +7,12 @@
 #include <complex> //std::sqrt
 #include <omp.h> //OpenMP 
 
-#define npoints 1000
+
 #define PI 3.14159265359
 
-//#ifndef ENSEMBLE_HENON_H
-//#define ENSEMBLE_HENON_H
 
 #include"fourier.h"
-#include"elliptic_int.h"
-//#include"newton.h" 
+#include"elliptic_integrals.h"
 
 std::random_device rd;
 //std::mt19937 generator(rd());
@@ -29,7 +26,8 @@ std::mt19937 generator(0);//rd());
 std::normal_distribution<double> noise_gauss_distr(0.0, 1.0);
 std::uniform_real_distribution<double> uniform_distr(-1, 1);
 
-void find_roots(double & root1, double & root2, double & root3, const double a, const double b, const double c) //finds the first 2 roots of a-bx^2+cx^3
+//finds the real part of the roots of a-bx^2+cx^3
+void find_roots(double & root1, double & root2, double & root3, const double a, const double b, const double c) 
 {
 	std::complex<double> croot1, croot2, croot3, temp, ctemp, valueplus, valueminus;
 	
@@ -58,13 +56,9 @@ void find_roots(double & root1, double & root2, double & root3, const double a, 
 	}
 }
 
-//void newtonfunc(double x, double *f, double *df, double I0);
 
 struct Ensemble
 {
-	//friend struct Newton_func;
-		
-	//double *p, *q, *E, *action, *dI_dE;
 	std::vector<double> p, q, E, action, dI_dE;
 	std::vector<int> deletedlist;
 	double w, k, epsilon, t;
@@ -117,7 +111,6 @@ struct Ensemble
 	
 	void check_energy(int index)
 	{
-		// è poco efficiente eliminare valori che non sono allocati alla fine!
 		if( E[index] < 0.1*energy_max() || E[index] > 0.9*energy_max() )
 		{
 			if(p.empty()) 
@@ -146,13 +139,13 @@ struct Ensemble
 		return 0.5*p*p + 0.5*w*w*q*q - k*q*q*q/3.0;
 	}
 	
-	double pex(const double & E, const double & x) //action integrando p(E,x)
+	double pex(const double & E, const double & x) //action integrand p(E,x)
 	{
 		double temp = 2.0*E - w*w*x*x + (2.0/3.0)*k*x*x*x;
 		return sqrt( temp<1e-10? 0.0 : temp );
 	}
 	
-	double tex(const double & E, const double & x) //action integrando p(E,x)
+	double tex(const double & E, const double & x) // t(E,x)
 	{
 		double temp = (2.0*E - w*w*x*x + (2.0/3.0)*k*x*x*x);
 		return sqrt( temp<1e-10? 0.0 : 1.0/temp );
@@ -246,7 +239,10 @@ struct Ensemble
 			double nr = uniform_distr(generator);
 			
 			q[i] = (nr<0.0)? -nr*root1 : nr*root2;
-			p[i] = pex(Ei, q[i]);
+			
+			nr = uniform_distr(generator);
+			
+			p[i] = ( (nr<0.0)? -1.0 : 1.0 )*pex(Ei, q[i]);
 			action[i] = actioni;
 			dI_dE[i] = dI_dEi;
 		}
@@ -273,7 +269,11 @@ struct Ensemble
 			double nr = uniform_distr(generator);
 			
 			q[i] = (nr<0.0)? -nr*root1 : nr*root2;
-			p[i] = pex(Ei, q[i]);
+			
+			nr = uniform_distr(generator);
+			
+			p[i] = ( (nr<0.0)? -1.0 : 1.0 )*pex(Ei, q[i]);
+			
 			action[i] = actioni;
 			dI_dE[i] = dI_dEi;
 		}
@@ -312,7 +312,10 @@ struct Ensemble
 			double nr = uniform_distr(generator);
 			
 			q[i] = (nr<0.0)? -nr*root1 : nr*root2;
-			p[i] = pex(Ei, q[i]);
+			
+			nr = uniform_distr(generator);
+			
+			p[i] = ( (nr<0.0)? -1.0 : 1.0 )*pex(Ei, q[i]);
 			action[i] = actioni;
 		}
 	}
@@ -381,8 +384,6 @@ struct Ensemble
 			dI_dE[i] = other.dI_dE[i];
 		}
 	}
-	
-	//~Ensemble()	{ delete p, q, E, action, dI_dE;	}
 };
 
 //from Numerical recipe in c
