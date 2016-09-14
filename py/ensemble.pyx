@@ -68,6 +68,9 @@ cdef class PyEnsemble:
         
     def pyadvance(self, dt):
         self.c_ensemble.advance(dt)
+        
+    def pysymplectic_advance(self, index, dt):
+        self.c_ensemble.symplectic_advance(self.c_ensemble.q[index], self.c_ensemble.p[index], dt, self.c_ensemble.t)
     
 
     @property
