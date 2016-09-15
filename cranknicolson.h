@@ -1,3 +1,4 @@
+//various crank nicolson implementations
 double* tridiagonal_solver(int N, const double* a, const double *b, const double *c, const double *d)
 {
 	double *c1 = new double[N];

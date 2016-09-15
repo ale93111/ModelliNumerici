@@ -7,12 +7,10 @@
 #include <complex> //std::sqrt
 #include <omp.h> //OpenMP 
 
-
-#define PI 3.14159265359
-
-
 #include"fourier.h"
 #include"elliptic_integrals.h"
+
+#define PI 3.14159265359
 
 std::random_device rd;
 //std::mt19937 generator(rd());

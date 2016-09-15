@@ -1,6 +1,6 @@
 #include <vector>
 #include <math.h>	// sqrt
-#include <complex> //std::sqrt
+#include <complex> //std::sqrt 
 
 #define PI 3.14159265359
 
@@ -57,3 +57,4 @@ double Elanden(double a, int N) //descending trasformation
 	std::complex<double> res = PI*k*c/2.0;
 	return res.real();
 }
+
