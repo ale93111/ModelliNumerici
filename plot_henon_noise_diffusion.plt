@@ -8,7 +8,7 @@ set output "henon_noise_diffusion.png"
 
 set xrange [0:0.16]
 
-binwidth=0.0007
+binwidth=0.001
 set boxwidth binwidth
 
 bin(x,width)=width*floor(x/width) + width/2.0

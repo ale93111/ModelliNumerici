@@ -6,12 +6,8 @@
 #include <math.h>	// sqrt
 #include <complex> //std::sqrt
 
-//#include"fourier.h"
-//#include"elliptic_int.h"
-#include"ensemble_henon.h"
+#include "ensemble_henon_smart.h"
 
-#define npoints 1000
-#define niterate 10
 #define PI 3.14159265359
 
 double slope_linear_regression(const std::vector<double>& x, const std::vector<double>& y)
@@ -32,7 +28,7 @@ double slope_linear_regression(const std::vector<double>& x, const std::vector<d
 	return Sxy / Sxx;
 }
 
-double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic/*, double *q_p_f*/)
+double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic)
 {	
 	double *q_p_f;
 	q_p_f = new double[Ndynamic*ensemble_temp.Nparticles];
@@ -101,21 +97,21 @@ int main(int argc, char *argv[])
 	
 	Ensemble ensemble(Nensemble, w, k, epsilon, E);
 	
+	//save copy of the initial state of the ensemble
 	Ensemble ensemble_0 = ensemble;
-	
+	//output average parameters of the ensemble
 	std::cout << "t iniziale = " << ensemble.t << "\t" << "E avg iniziale = " << ensemble.avg_energy() << std::endl
-			  << "azione avg iniziale = " << ensemble.avg_action() << "\t" << "dI_dE[0] iniziale = " << ensemble.dI_dE[0] << std::endl;
+			  << "azione avg iniziale = " << ensemble.avg_action() << "\t" << "dI_dE avg iniziale = " << ensemble.avg_dI_dE() << std::endl;
 	
+	//initial average  action of the ensemble
 	double avg_action_0 = ensemble.avg_action();
-	
-	
+	//temporary copy of the initial ensemble for the theoretical diffusion
 	Ensemble ensemble_temp = ensemble;
 
 	for(int i=0; i<nsteps; i++)
 	{
-		//Ensemble ensemble_diff = ensemble;
 		ensemble.advance(dt);
-		//std::cout << "avg action = " << ensemble.avg_action() << std::endl;		
+		
 		Ntime.push_back(ensemble.t);
 		Ncoeff_drift.push_back(ensemble.avg_action() - avg_action_0);
 		Ncoeff_diffusion.push_back( ensemble.avg_action_for_diffusion(ensemble_0) ); 
@@ -123,10 +119,10 @@ int main(int argc, char *argv[])
 	
 	coeff_drift = slope_linear_regression(Ntime, Ncoeff_drift);
 	coeff_diffusion = slope_linear_regression(Ntime, Ncoeff_diffusion);
-	coeff_diffusion_theoretical = epsilon*epsilon*theoretical_diffusion(ensemble_temp, Ndynamic/*, q_p_f*/);
+	coeff_diffusion_theoretical = epsilon*epsilon*theoretical_diffusion(ensemble_temp, Ndynamic);
 		
 	std::cout << "t finale = " << ensemble.t << "\t" << "E avg finale = " << ensemble.avg_energy() << std::endl
-			  << "azione avg finale = " << ensemble.avg_action() << "\t" << "dI_dE[0] finale = " << ensemble.dI_dE[0]<< std::endl;
+			  << "azione avg finale = " << ensemble.avg_action() << "\t" << "dI_dE avg iniziale = " << ensemble.avg_dI_dE() << std::endl;
 	
 	
 	
@@ -141,7 +137,6 @@ int main(int argc, char *argv[])
 	
 	int err;
 	
-	/*
 	std::ofstream output;	
 	output.open("diffusion_time.txt");
 	
@@ -153,26 +148,8 @@ int main(int argc, char *argv[])
 	output.close();
 	
 	err = system("gnuplot plot_diffusion_time.plt");
-	err = system("gnuplot plot_diffusion_time_loglog.plt");
+	//err = system("gnuplot plot_diffusion_time_loglog.plt");
 	
-	
-	std::ofstream spaziofasi;	
-	spaziofasi.open("henon_spaziofasi_iniziale.txt");
-	
-	for(int j=0; j<Ndynamic; j++)
-	{		
-		for(int n=0; n<ensemble_0.Nparticles; n++)
-		{
-			ensemble_0.symplectic_advance( ensemble_0.q[n], ensemble_0.p[n], 2.0*PI*ensemble_0.dI_dE[n]/Ndynamic, ensemble_0.t);
-			spaziofasi << ensemble_0.q[n] << "\t" << ensemble_0.p[n] << "\t";
-		}
-		spaziofasi << std::endl;
-	}
-
-	spaziofasi.close();
-	
-	err = system("gnuplot plot_spaziofasi.plt");
-	*/
 	std::cout << std::endl;
 	std::cout << "Fatto!" << std::endl;
 	

@@ -10,11 +10,11 @@ set output "henon_diffusion_action.png"
 
 
 set xlabel 'Action'
-set ylabel 'Diffusion'
+set ylabel 'Diffusion coeff.'
 
 #set logscale y
 #set logscale x
 #set yrange [1e-5:2]
 #set format y "10^{%L}"
 
-plot FILE_IN using 1:2 with points pointtype 7 linecolor rgb 'blue' title 'action diffusion' 
+plot FILE_IN using 1:2 with points pointtype 7 linecolor rgb 'blue' title 'Diffusion coeff. VS Action' 

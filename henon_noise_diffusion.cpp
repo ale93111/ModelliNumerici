@@ -6,7 +6,6 @@
 #include <math.h>	// sqrt
 #include <complex> //std::sqrt
 
-//#include"ensemble_henon.h"
 #include"ensemble_henon_smart.h"
 
 #define PI 3.14159265359

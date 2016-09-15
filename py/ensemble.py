@@ -89,7 +89,7 @@ with open(path+fname) as f:
     for line in f: # read rest of lines
         arraylist.append([float(x) for x in line.split()])
         
-#%%
+
 temparray = np.array(arraylist)
 array = np.reshape(temparray, (3, int(np.size(temparray)/3)))
 
@@ -105,7 +105,7 @@ ni, binsi, patchesi = plt.hist(ei.action, bins=30, color='blue', normed=1, alpha
 nf, binsf, patchesf = plt.hist(ef.action, bins=100, color='red', normed=1, alpha=0.5, label='Final distribution - MonteCarlo')
 
 plt.xlabel('Action')
-plt.ylabel('Normalized occurrences')
+plt.ylabel('Normalized occurrences %')
 plt.legend()
 #%%
 
