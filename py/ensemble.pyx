@@ -47,16 +47,29 @@ cdef extern from "/home/alessandro/ModelliNumerici/ensemble_henon_smart.h":
 cdef class PyEnsemble:
     cdef Ensemble c_ensemble      # hold a C++ instance which we're wrapping
     
-    def __cinit__(self, int N=0, double w=0, double k=0, double epsilon=0, double EImean=0, double devstd=0, char Vi='0'):
-        if N == 0:
-            self.c_ensemble = Ensemble()
-        if devstd == 0 and Vi == '0':
-            self.c_ensemble = Ensemble(N,w,k,epsilon,EImean)
-        if devstd == 0 and Vi != '0':
-            self.c_ensemble = Ensemble(N,w,k,epsilon,EImean,Vi)
-        if devstd != 0 and Vi != '0':
-            self.c_ensemble = Ensemble(N,w,k,epsilon,EImean,devstd,Vi)
-        
+    def __cinit__(self, int N=0, double w=0, double k=0, double epsilon=0, double EImean=0, double devstd=0, char Vi='0', PyEnsemble other = None):
+        if other == None:        
+            if N == 0:
+                self.c_ensemble = Ensemble()
+            if devstd == 0 and Vi == '0':
+                self.c_ensemble = Ensemble(N,w,k,epsilon,EImean)
+            if devstd == 0 and Vi != '0':
+                self.c_ensemble = Ensemble(N,w,k,epsilon,EImean,Vi)
+            if devstd != 0 and Vi != '0':
+                self.c_ensemble = Ensemble(N,w,k,epsilon,EImean,devstd,Vi)
+        else:
+            self.c_ensemble.Nparticles  = other.Nparticles
+            self.c_ensemble.p           = other.p
+            self.c_ensemble.q           = other.q
+            self.c_ensemble.E           = other.E
+            self.c_ensemble.action      = other.action
+            self.c_ensemble.dI_dE       = other.dI_dE
+            self.c_ensemble.deletedlist = other.deletedlist
+            self.c_ensemble.t           = other.t
+            self.c_ensemble.w           = other.w
+            self.c_ensemble.k           = other.k
+            self.c_ensemble.epsilon     = other.epsilon
+            
     def pyavg_energy(self):
         return self.c_ensemble.avg_energy()
     def pyavg_action(self):
@@ -97,3 +110,12 @@ cdef class PyEnsemble:
     @property
     def t(self):
         return self.c_ensemble.t
+    @property
+    def w(self):
+        return self.c_ensemble.w
+    @property
+    def k(self):
+        return self.c_ensemble.k
+    @property
+    def epsilon(self):
+        return self.c_ensemble.epsilon

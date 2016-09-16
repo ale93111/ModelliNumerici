@@ -25,7 +25,9 @@ dt = 0.01
 todo = 1
 #%%
 ei = ensemble.PyEnsemble(Nensemble,w,k,epsilon,mean,devstd,todo)
-ef = ensemble.PyEnsemble(Nensemble,w,k,epsilon,mean,devstd,todo)
+#temporary workaround to a python copy constructor
+ef = ensemble.PyEnsemble(0,0,0,0,0,0,0,ei)
+
 
 #%%
 #t = time.time()

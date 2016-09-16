@@ -6,7 +6,7 @@ set terminal png enhanced
 set output "henon_noise_diffusion.png"
 
 
-set xrange [0:0.16]
+set xrange [0:0.18]
 
 binwidth=0.001
 set boxwidth binwidth
