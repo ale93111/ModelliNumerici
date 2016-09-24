@@ -1,5 +1,12 @@
 # ModelliNumerici
 
+# Abstract
+This work was done to study the diffusion in the dynamics of particle beams in accelerator
+physics. The phenomenon can be described by the Hénon map whose linear frequency is
+stochastically perturbed. Finally, a theoretical model for the action diffusion based on the
+Fokker-Planck equation is introduced and its solution agrees with the simulation process.
+
+
 Read report.pdf for a more detailed explanation.
 
 All scripts need to be compiled with the "-std=c++11" flag, also the optional flag "-fopenmp" to use OpenMP and/or "-O3" for optimization
