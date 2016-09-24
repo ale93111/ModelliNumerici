@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import time
 import scipy as sp
 
+sizefig = 7
 #%%
 Nensemble = 10000
 w = 1.0
@@ -53,31 +54,31 @@ print(" N particles = ", ef.Nparticles    ,'\n',
       "avg dI_dE = "   , ef.pyavg_dI_dE() ,'\n')
       
 #%%
-plt.figure(figsize=(12,12))
+plt.figure(figsize=(sizefig,sizefig))
 plt.hist(ei.q, bins=30, color='blue', normed=1, alpha=0.5)
 plt.hist(ef.q, bins=30, color='red', normed=1, alpha=0.5)
 plt.xlabel('q')
 plt.ylabel('# Occurrences')
 #%%
-plt.figure(figsize=(12,12))
+plt.figure(figsize=(sizefig,sizefig))
 plt.hist(ei.p, bins=30, color='blue', normed=1, alpha=0.5)
 plt.hist(ef.p, bins=30, color='red', normed=1, alpha=0.5)
 plt.xlabel('p')
 plt.ylabel('# Occurrences')
 #%%
-plt.figure(figsize=(12,12))
+plt.figure(figsize=(sizefig,sizefig))
 plt.hist(ei.E, bins=30, color='blue', normed=1, alpha=0.5)
 plt.hist(ef.E, bins=30, color='red', normed=1, alpha=0.5)
 plt.xlabel('Energy')
 plt.ylabel('# Occurrences')
 #%%
-plt.figure(figsize=(12,12))
+plt.figure(figsize=(sizefig,sizefig))
 plt.hist(ei.action, bins=30, color='blue', normed=1, alpha=0.5)
 plt.hist(ef.action, bins=30, color='red', normed=1, alpha=0.5)
 plt.xlabel('Action')
 plt.ylabel('# Occurrences')
 #%%
-plt.figure(figsize=(12,12))
+plt.figure(figsize=(sizefig,sizefig))
 plt.hist(ei.dI_dE, bins=30, color='blue', normed=1, alpha=0.5)
 plt.hist(ef.dI_dE, bins=30, color='red', normed=1, alpha=0.5)
 plt.xlabel('dI_dE')
@@ -100,7 +101,7 @@ for i in range(int(np.size(array)/3)):
     array[1][i] = arraylist[i][1] #y initial
     array[2][i] = arraylist[i][2] #y final
 #%%
-plt.figure(figsize=(12,12))
+plt.figure(figsize=(sizefig,sizefig))
 plt.plot(array[0][:], array[1], 'b--',linewidth=4.0, label='Initial distribution - Cranck-nicolson')
 plt.plot(array[0][:], array[2], 'r--',linewidth=4.0, label='Final distribution - Cranck-nicolson')
 ni, binsi, patchesi = plt.hist(ei.action, bins=30, color='blue', normed=1, alpha=0.5, label='Initial distribution - MonteCarlo')
@@ -144,7 +145,7 @@ for i in range(Nensemble):
 
     
 #%%
-plt.figure(figsize=(12,12))
+plt.figure(figsize=(sizefig,sizefig))
 for i in range(Nensemble):
     plt.plot(q[i], p[i], 'b', linewidth=1.0)
 plt.plot(0,0,'.')
@@ -158,7 +159,7 @@ plt.ylabel('p')
 Nparticles = 100
 test = ensemble.PyEnsemble(Nparticles,w,k,epsilon,0.1)
 
-plt.figure(figsize=(12,12))
+plt.figure(figsize=(sizefig,sizefig))
 for i in range(Nparticles):
     plt.plot(test.q, test.p, '.')
 
