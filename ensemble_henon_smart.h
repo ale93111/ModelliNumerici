@@ -24,7 +24,7 @@ std::mt19937 generator(0);//rd());
 std::normal_distribution<double> noise_gauss_distr(0.0, 1.0);
 std::uniform_real_distribution<double> uniform_distr(-1, 1);
 
-//finds the real part of the roots of a-bx^2+cx^3
+//finds the real part of the roots of the polynomial a-bx^2+cx^3
 void find_roots(double & root1, double & root2, double & root3, const double a, const double b, const double c) 
 {
 	std::complex<double> croot1, croot2, croot3, temp, ctemp, valueplus, valueminus;
@@ -58,10 +58,12 @@ void find_roots(double & root1, double & root2, double & root3, const double a, 
 struct Ensemble
 {
 	std::vector<double> p, q, E, action, dI_dE;
+	//store a deleted list of the indexes of the particles that have energies outside of the defined range of the problem (10% ~ 90% of the max energy)
 	std::vector<int> deletedlist;
 	double w, k, epsilon, t;
 	int Nparticles;
 	
+	//compute the average energy of the ensemble of particles
 	double avg_energy()
 	{
 		double avg = 0.0;
@@ -72,6 +74,7 @@ struct Ensemble
 		return avg/Nparticles;
 	}
 	
+	//compute the average action of the ensemble of particles
 	double avg_action()
 	{
 		double avg = 0.0;
@@ -82,6 +85,7 @@ struct Ensemble
 		return avg/Nparticles;
 	}
 	
+	//compute the average dI/dE of the ensemble of particles
 	double avg_dI_dE()
 	{
 		double avg = 0.0;
@@ -92,6 +96,7 @@ struct Ensemble
 		return avg/Nparticles;
 	}
 	
+	//compute the second momentum of the action distribution between two ensembles (used to find the diffusion coefficient) 
 	double avg_action_for_diffusion( const Ensemble & ensemble)
 	{
 		double avg = 0.0;
@@ -102,13 +107,16 @@ struct Ensemble
 		return avg/Nparticles;
 	}
 	
+	//compute the max energy that corresponds to the stability region of the phase space (boundary=separatrix)
 	double energy_max()
 	{
 		return w*w*w*w*w*w/(6.0*k*k);
 	}
 	
+	//check the value of the energy of the particle with index=index, if it's outside the range of allowed energies deletes the particle from the ensemble
 	void check_energy(int index)
 	{
+		//check the range of allowed energies
 		if( E[index] < 0.1*energy_max() || E[index] > 0.9*energy_max() )
 		{
 			if(p.empty()) 
@@ -131,16 +139,17 @@ struct Ensemble
 		}
 	}
 
-	
+	//compute the energy of a particle from p and q
 	double energy(const double & q, const double & p)
 	{
 		return 0.5*p*p + 0.5*w*w*q*q - k*q*q*q/3.0;
 	}
 	
-	double pex(const double & E, const double & x) //action integrand p(E,x)
+	//action integrand p(E,x)
+	double pex(const double & E, const double & x)
 	{
 		double temp = 2.0*E - w*w*x*x + (2.0/3.0)*k*x*x*x;
-		return sqrt( temp<1e-10? 0.0 : temp );
+		return sqrt( temp<1e-10? 0.0 : temp ); //fix to avoid numerical troubles
 	}
 	
 	double tex(const double & E, const double & x) // t(E,x)
@@ -149,6 +158,7 @@ struct Ensemble
 		return sqrt( temp<1e-10? 0.0 : 1.0/temp );
 	}
 	
+	//compute the analytical action integral using complete elliptic integrals
 	double action_elliptic(double root1, double root2, double root3)
 	{
 		return (2.0/(15.0*PI))*sqrt(2.0*k/3.0)*(sqrt(root2 - root1)*(root2 - root3)*(root1 - 2.0*root2 + root3)
@@ -157,17 +167,20 @@ struct Ensemble
 										*Elanden(sqrt((root3 - root1)/(root2 - root1)), 10));
 	}
 	
+	//compute the analytical dI/dE integral using complete elliptic integrals
 	double dI_dE_elliptic(double root1, double root2, double root3)
 	{
 		return (1.0/PI)*sqrt(3.0/(2.0*k))*(2.0/sqrt(root3 - root1))*Klanden(sqrt((root2 - root1)/(root3 - root1)), 10);
 	}
 	
+	//symplectic integrator of the motion equations (splitting method)
 	void symplectic_advance(double & q, double & p, const double dt, const double t)
 	{
 		p = p - dt*( w*w*q - k*q*q );
 		q = q + dt*p;
 	}
-		
+	
+	//algorithm to advance the dynamics with noise (see report)
 	void advance( const double dt )
 	{
 		
@@ -182,6 +195,7 @@ struct Ensemble
 		
 			symplectic_advance(q[i], p[i], dt/2.0, t);
 			
+			//find the new energy, action and dI/dE
 			E[i] = energy( q[i], p[i]); 
 		
 			double root1, root2, root3;
@@ -191,10 +205,15 @@ struct Ensemble
 			action[i] = action_elliptic(root1, root2, root3);
 			dI_dE[i] = dI_dE_elliptic(root1, root2, root3);
 			
+			//check energy of particles and delete the particles outside range
 			check_energy(i);
 		}
 	}
 	
+	//this is the function used by the newton method, which is used to initialize the ensemble with an action value or distribution.
+	//We know how to compute analitically the action I of a particle from its energy E, but not viceversa.
+	//So we know I(E) but not E(I). To find E(I) we use the newton method to find the zero of the function I(E)-I0
+	//where I0 is the desired action value that we want to use to initialize the values of the particles
 	void newtonfunc(double x, double *f, double *df, double I0)
 	{	
 		double root1, root2, root3;
@@ -204,7 +223,9 @@ struct Ensemble
 		df[0] = dI_dE_elliptic(root1, root2, root3);
 	}
 	
+	//from Numerical recipe in c, the newton method applied to newtonfunc defined above
 	double rtsafe(double x1, double x2, double xacc, double offset);
+	//it's defined below
 	
 	void allocator( int N )
 	{
@@ -217,6 +238,7 @@ struct Ensemble
 	
 	Ensemble(){}
 	
+	//constructor used to initialize the ensemble with the same value of energy for all the particles
 	Ensemble(int N, double wi, double ki, double epsiloni, double Ei) : Nparticles(N), w(wi), k(ki), epsilon(epsiloni) 
 	{
 		allocator(N);
@@ -246,6 +268,8 @@ struct Ensemble
 		}
 	}	
 	
+	//constructor overload to initialize the ensemble with the same value of action for all the particles
+	//overload: add a char as last argument
 	Ensemble(int N, double wi, double ki, double epsiloni, double actioni, char Vi) : Nparticles(N), w(wi), k(ki), epsilon(epsiloni)
 	{
 		allocator(N);
@@ -277,6 +301,7 @@ struct Ensemble
 		}
 	}
 	
+	//overload constructor to initialize the ensemble with a Gaussian action distribution  
 	Ensemble(int N, double wi, double ki, double epsiloni, double mean, double devstd, char Vi) : Nparticles(N), w(wi), k(ki), epsilon(epsiloni)
 	{
 		allocator(N);
@@ -293,6 +318,7 @@ struct Ensemble
 			double Ei, actioni;
 			double root1, root2, root3;
 			
+			//exclude values of action sampled from the distribution that correspond to values of energy outside range
 			do
 			{
 				actioni = gauss_distr(generator);
@@ -384,7 +410,9 @@ struct Ensemble
 	}
 };
 
-//from Numerical recipe in c
+//from Numerical recipe in c, the newton methon applied to newtonfunc
+//[x1,x2] is the interval where the algorithm looks for the zero of the function
+//xacc is the desired accuracy of the solution
 double Ensemble::rtsafe(double x1, double x2, double xacc, double offset = 0.0)
 {
 	//Maximum allowed number of iterations.

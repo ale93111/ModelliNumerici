@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 		Ncoeff_diffusion.push_back( ensemble.avg_action_for_diffusion(ensemble_0) ); 
 	}
 	
-	coeff_drift = slope_linear_regression(Ntime, Ncoeff_drift);
+	coeff_drift 	= slope_linear_regression(Ntime, Ncoeff_drift);
 	coeff_diffusion = slope_linear_regression(Ntime, Ncoeff_diffusion);
 	coeff_diffusion_theoretical = epsilon*epsilon*theoretical_diffusion(ensemble_temp, Ndynamic);
 		

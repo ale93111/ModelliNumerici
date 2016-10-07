@@ -9,6 +9,7 @@
 #define PI 3.14159265359
 #define TWOPI	(2.0*PI)
 
+//gaussian distribution
 double gauss(double x, double mean, double devstd)
 {
 	return exp( -0.5*pow( (x - mean)/devstd , 2.0))/(devstd*sqrt(TWOPI));
@@ -16,6 +17,7 @@ double gauss(double x, double mean, double devstd)
 
 int main(void)
 {
+	//store values loaded from file
 	std::vector<double> numbers;
 
 	std::ifstream in("diffusion_action.txt"); //Create an input file stream
@@ -46,10 +48,12 @@ int main(void)
 		//mu[i] = -0.5*x[i]; //not used
 	}
 	
+	//ro initialized as gaussian distribution
 	for(int i=1; i<N; i++)
 	{
 		ro[i] = gauss(x[i], 0.040, 0.005);
 	} 
+	//boundary conditions
 	ro[0] = 0.0;
 	ro[N-1] = 0.0;
 
@@ -64,19 +68,25 @@ int main(void)
 	
 	//for(int i=0; i<N; i++) std::cout << D[i] << "\t" << x[i] << "\t" << ro[i] << std::endl;
 	
+	//compute numerically the integral of the initial distribution  
 	double sum = 0.0;
 	for(int i=0; i<N; i++) sum += h*ro[i];
 	std::cout << "sum iniziale = " << sum << std::endl;
 	
+	
+	//apply crank nicolson and find the final distribution resulted from the diffusion process
 	double *res = cranknicolson2(D, ro, N, Npassi, h, dt);
 	//double *res = cranknicolson_fokkerplanck(mu, D, ro, N, Npassi, h, dt);
 	
 	//for(int i=0; i<N; i++) std::cout << x[i] << "\t" << ro[i] << "\t" << res[i] << std::endl;
 	
+	//compute numerically the integral of the final distribution  
 	sum = 0.0;
 	for(int i=0; i<N; i++) sum += h*res[i];
 	std::cout << "sum finale = " << sum << std::endl;
 	
+	
+	//save to file and plot
 	int err;
 	
 	std::ofstream output;	

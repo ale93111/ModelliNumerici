@@ -87,6 +87,8 @@ int main(void)
 	
 	//for(int i=0; i<n; i++) std::cout << "Coeff_diffusion [" << i << "] = " << Ncoeff_diffusion[i] << std::endl;
 	
+	
+	//save to file and plot
 	int err;
 	std::ofstream output;	
 	output.open("diffusion_action.txt");

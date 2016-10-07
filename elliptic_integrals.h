@@ -4,7 +4,14 @@
 
 #define PI 3.14159265359
 
-double Klanden(double a, int N) //descending trasformation
+//descending landen trasformations, see abramowitz and stegun
+//generalized to complex values of the modular angle, they return only the real part of the result
+
+//IMPORTANT: the argument of these functions is the modular angle
+//check wolframalpha page on elliptic integrals or abramotiz and stegun for possible other conventions
+
+//complete elliptic integral of the first kind
+double Klanden(double a, int N) 
 {
 	std::complex<double> alpha, k, temp;
 
@@ -26,7 +33,8 @@ double Klanden(double a, int N) //descending trasformation
 	return PI*k.real()/2.0;
 }
 
-double Elanden(double a, int N) //descending trasformation
+//complete elliptic integral of the second kind
+double Elanden(double a, int N) 
 {
 	std::complex<double> alpha, k, temp;
 

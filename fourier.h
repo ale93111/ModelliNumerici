@@ -3,7 +3,7 @@
 #define PI 3.14159265359
 #define TWOPI	(2.0*PI)
 
-//from Numerical recipe in c
+//from Numerical recipe in c, computes the fourier transform of data (of size nn, which should be a power of 2)
 void four1(double data[], int nn, int isign)
 {
     int n, mmax, m, j, istep, i;
@@ -35,22 +35,22 @@ void four1(double data[], int nn, int isign)
 	wi = 0.0;
 	for (m = 1; m < mmax; m += 2) {
 	    for (i = m; i <= n; i += istep) {
-		j =i + mmax;
-		tempr = wr*data[j]   - wi*data[j+1];
-		tempi = wr*data[j+1] + wi*data[j];
-		data[j]   = data[i]   - tempr;
-		data[j+1] = data[i+1] - tempi;
-		data[i] += tempr;
-		data[i+1] += tempi;
+			j =i + mmax;
+			tempr = wr*data[j]   - wi*data[j+1];
+			tempi = wr*data[j+1] + wi*data[j];
+			data[j]   = data[i]   - tempr;
+			data[j+1] = data[i+1] - tempi;
+			data[i] += tempr;
+			data[i+1] += tempi;
 	    }
 	    wr = (wtemp = wr)*wpr - wi*wpi + wr;
 	    wi = wi*wpr + wtemp*wpi + wi;
-	}
+	}	
 	mmax = istep;
     }
 }
 
-//zero padding of complex components
+//zero padding of complex components to compute the fourier transform of a real signal
 void realft(double* data, unsigned long n)
 {
 	double *X = new double[2*n+1]; 

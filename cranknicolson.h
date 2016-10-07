@@ -1,4 +1,8 @@
-//various crank nicolson implementations
+//Various crank nicolson implementations
+
+//tridiagonal matrix algorithm to solve for X: [tridiagonal matrix]*X = d
+//[b] are the values on the diagonal, [c] the values above and [a] below, of the tridiagonal matrix
+//N is the dimension of the NxN tridiagonal matrix
 double* tridiagonal_solver(int N, const double* a, const double *b, const double *c, const double *d)
 {
 	double *c1 = new double[N];
@@ -22,6 +26,7 @@ double* tridiagonal_solver(int N, const double* a, const double *b, const double
 	return x;
 }
 
+//crank nicolson for the diffusion equation with diffusion coefficient D(x)
 double* cranknicolson(double* D, double* ro, const int N, const int Npassi, const double h, const double dt)
 {
 	double h_h_dt = 2.0*h*h/dt;
@@ -63,6 +68,7 @@ double* cranknicolson(double* D, double* ro, const int N, const int Npassi, cons
 	B[N-1][N-1] = h_h_dt - D[N+1] - D[N-1];
 	B[N-1][N-2] = - a[N-1];
 	
+	//advance the time for Npassi*dt
 	for(double t=0; t<Npassi*dt; t+=dt)
 	{
 		for(int i=0; i<N; i++) d[i] = 0.0;
@@ -83,6 +89,7 @@ double* cranknicolson(double* D, double* ro, const int N, const int Npassi, cons
 	return ro;
 }
 
+//crank nicolson with different algebra, it's equivalent to the one above 
 double* cranknicolson2(double* D, double* ro, const int N, const int Npassi, const double h, const double dt)
 {
 	double h_h_dt = 2.0*h*h/dt;
@@ -124,6 +131,7 @@ double* cranknicolson2(double* D, double* ro, const int N, const int Npassi, con
 	B[N-1][N-1] = h_h_dt - 2.0*D[N];
 	B[N-1][N-2] = - a[N-1];
 	
+	//advance the time for Npassi*dt
 	for(double t=0; t<Npassi*dt; t+=dt)
 	{
 		for(int i=0; i<N; i++) d[i] = 0.0;
@@ -144,6 +152,7 @@ double* cranknicolson2(double* D, double* ro, const int N, const int Npassi, con
 	return ro;
 }
 
+//crank nicolson for the fokker planck equation
 double* cranknicolson_fokkerplanck(double * mu, double* D, double* ro, const int N, const int Npassi, const double h, const double dt)
 {
 	double h_h_dt = 2.0*h*h/dt;
@@ -185,6 +194,7 @@ double* cranknicolson_fokkerplanck(double * mu, double* D, double* ro, const int
 	B[N-1][N-1] = h_h_dt - 2.0*D[N];
 	B[N-1][N-2] = - a[N-1];
 	
+	//advance the time for Npassi*dt
 	for(double t=0; t<Npassi*dt; t+=dt)
 	{
 		for(int i=0; i<N; i++) d[i] = 0.0;
