@@ -20,12 +20,12 @@ double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic)
 		//per ogni particella
 		for(int n=0; n<ensemble_temp.Nparticles; n++)
 		{
+			//propaga la dinamica simplettica 
 			ensemble_temp.symplectic_advance( ensemble_temp.q[n], ensemble_temp.p[n], 2.0*PI*ensemble_temp.dI_dE[n]/Ndynamic, ensemble_temp.t);
 				
 			//costruisco un segnale di cui vado a fare la FFT
 			q_p_f[n*Ndynamic + j] = pow( ensemble_temp.q[n]*ensemble_temp.p[n]*(ensemble_temp.dI_dE[n]) , 2.0); // ;
 		}
-		//ensemble_temp.t += dtdynamic;
 	}
 	
 	double avg_diffusion_temp = 0.0;
@@ -58,15 +58,18 @@ int main(void)
 	int n = 201; //add +1 for the last element of the interval
 		
 	double Ea, Eb;
-	
+	//energy range
 	Ea = 0.1*Emax;
 	Eb = 0.9*Emax;
 	
+	//array of ensembles used to find the theoretical diffusion coefficients
 	Ensemble *ensemble = new Ensemble[n];
 	
+	//initialize the first and last ensembles and use them to find their average action, which is used as extreme points of the action grid
 	ensemble[0]   = Ensemble(Nensemble, w, k, epsilon, Ea);
 	ensemble[n-1] = Ensemble(Nensemble, w, k, epsilon, Eb);
 	
+	//action grid
 	double *I = new double[n];
 	double Ia = ensemble[0].avg_action();
 	double Ib = ensemble[n-1].avg_action();
@@ -77,12 +80,12 @@ int main(void)
 	I[n-1] = Ib;
 	for(int i=1; i<n; i++) I[i] = I[i-1] + dI;
 	
-	//for(int i=0; i<n; i++) std::cout << "I [" << i << "] = " << I[i] << std::endl;
-	
+	//initialize ensembles from action values
 	for(int i=1; i<n-1; i++) ensemble[i] = Ensemble(Nensemble, w, k, epsilon, I[i], 'i');
 
 	double *Ncoeff_diffusion = new double[n];
 	
+	//find the theoretical diffusion coefficient for every action value in the grid using the ensembles
 	for(int i=0; i<n; i++) Ncoeff_diffusion[i] = epsilon*epsilon*theoretical_diffusion(ensemble[i], Ndynamic);
 	
 	//for(int i=0; i<n; i++) std::cout << "Coeff_diffusion [" << i << "] = " << Ncoeff_diffusion[i] << std::endl;

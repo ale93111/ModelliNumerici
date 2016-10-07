@@ -44,7 +44,6 @@ double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic)
 			//costruisco un segnale di cui vado a fare la FFT
 			q_p_f[n*Ndynamic + j] = pow( ensemble_temp.q[n]*ensemble_temp.p[n]*(ensemble_temp.dI_dE[n]) , 2.0); // ;
 		}
-		//ensemble_temp.t += dtdynamic;
 	}
 	
 	double avg_diffusion_temp = 0.0;
@@ -64,9 +63,6 @@ double theoretical_diffusion(Ensemble ensemble_temp, int Ndynamic)
 	}
 	
 	return avg_diffusion_temp /= Ndynamic*ensemble_temp.Nparticles;
-	
-	//realft( &q_p_f[0], Ndynamic );
-	//return q_p_f[0]/Ndynamic;
 }
 
 int main(int argc, char *argv[])

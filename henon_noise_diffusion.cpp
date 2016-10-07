@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	
 	int err;
 	
-	//salvare su file
+	//salvare su file e plot
 	std::ofstream output;	
 	output.open("henon_noise_diffusion.txt");
 	
